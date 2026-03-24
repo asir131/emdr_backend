@@ -1,0 +1,588 @@
+{
+	"info": {
+		"_postman_id": "my-emdr-complete-auth-v2",
+		"name": "MY EMDR - Complete Authentication System",
+		"description": "Complete production-ready authentication system with 8 endpoints:\n\n1. Health Check - Server status\n2. Signup - User registration with email verification\n3. Verify OTP - Email verification\n4. Login - User authentication\n5. Forgot Password - Password recovery initiation\n6. Recover Account - Token-based password reset\n7. Recover Account with OTP - OTP-based password reset\n8. Send Verification OTP - Send OTP for unverified users\n\nPlus error scenario testing.",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "1. Health Check",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test('Server is running', function () {",
+							"    pm.response.to.have.status(200);",
+							"});",
+							"",
+							"pm.test('Response has correct format', function () {",
+							"    const response = pm.response.json();",
+							"    pm.expect(response).to.have.property('status');",
+							"    pm.expect(response.status).to.equal('ok');",
+							"});"
+						]
+					}
+				}
+			],
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:5005/health",
+					"protocol": "http",
+					"host": ["localhost"],
+					"port": "5005",
+					"path": ["health"]
+				}
+			},
+			"description": "Check if server is running and healthy"
+		},
+		{
+			"name": "2. Signup",
+			"event": [
+				{
+					"listen": "prerequest",
+					"script": {
+						"exec": [
+							"// Generate unique email for testing",
+							"const timestamp = new Date().getTime();",
+							"pm.collectionVariables.set('testEmail', `user${timestamp}@myemdr.com`);"
+						]
+					}
+				},
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test('Signup successful', function () {",
+							"    pm.response.to.have.status(201);",
+							"});",
+							"",
+							"pm.test('Response has correct structure', function () {",
+							"    const response = pm.response.json();",
+							"    pm.expect(response.success).to.equal(true);",
+							"    pm.expect(response.data).to.have.property('message');",
+							"    pm.expect(response.data).to.have.property('email');",
+							"    pm.expect(response.data).to.have.property('user');",
+							"    pm.expect(response.data).to.have.property('session');",
+							"});",
+							"",
+							"pm.test('Save tokens and OTP', function () {",
+							"    const response = pm.response.json();",
+							"    pm.collectionVariables.set('accessToken', response.data.session.accessToken);",
+							"    pm.collectionVariables.set('refreshToken', response.data.session.refreshToken);",
+							"    pm.collectionVariables.set('userEmail', response.data.email);",
+							"    if (response.data._dev_otp) {",
+							"        pm.collectionVariables.set('signupOtp', response.data._dev_otp);",
+							"        console.log('✅ Signup OTP saved:', response.data._dev_otp);",
+							"    }",
+							"});"
+						]
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"firstName\": \"Ratul\",\n  \"lastName\": \"Ahmed\",\n  \"email\": \"{{testEmail}}\",\n  \"password\": \"MyPass@123\",\n  \"confirmPassword\": \"MyPass@123\"\n}"
+				},
+				"url": {
+					"raw": "http://localhost:5005/api/auth/signup",
+					"protocol": "http",
+					"host": ["localhost"],
+					"port": "5005",
+					"path": ["api", "auth", "signup"]
+				}
+			},
+			"description": "Register a new user with email verification"
+		},
+		{
+			"name": "3. Verify OTP (Signup)",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test('OTP verification successful', function () {",
+							"    pm.response.to.have.status(200);",
+							"});",
+							"",
+							"pm.test('User is verified', function () {",
+							"    const response = pm.response.json();",
+							"    pm.expect(response.success).to.equal(true);",
+							"    pm.expect(response.data.user.isVerified).to.equal(true);",
+							"});"
+						]
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"email\": \"{{userEmail}}\",\n  \"otp\": \"{{signupOtp}}\"\n}"
+				},
+				"url": {
+					"raw": "http://localhost:5005/api/auth/verify-otp",
+					"protocol": "http",
+					"host": ["localhost"],
+					"port": "5005",
+					"path": ["api", "auth", "verify-otp"]
+				}
+			},
+			"description": "Verify email with OTP received during signup"
+		},
+		{
+			"name": "4. Login",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test('Login successful', function () {",
+							"    pm.response.to.have.status(200);",
+							"});",
+							"",
+							"pm.test('Save new tokens', function () {",
+							"    const response = pm.response.json();",
+							"    pm.expect(response.success).to.equal(true);",
+							"    pm.collectionVariables.set('accessToken', response.data.session.accessToken);",
+							"    pm.collectionVariables.set('refreshToken', response.data.session.refreshToken);",
+							"    console.log('✅ Login successful, tokens saved');",
+							"});"
+						]
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"email\": \"{{userEmail}}\",\n  \"password\": \"MyPass@123\"\n}"
+				},
+				"url": {
+					"raw": "http://localhost:5005/api/auth/login",
+					"protocol": "http",
+					"host": ["localhost"],
+					"port": "5005",
+					"path": ["api", "auth", "login"]
+				}
+			},
+			"description": "Authenticate user with email and password"
+		},
+		{
+			"name": "5. Forgot Password",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test('Forgot password initiated', function () {",
+							"    pm.response.to.have.status(200);",
+							"});",
+							"",
+							"pm.test('Save recovery OTP and tokens', function () {",
+							"    const response = pm.response.json();",
+							"    pm.expect(response.success).to.equal(true);",
+							"    if (response.data._dev_otp) {",
+							"        pm.collectionVariables.set('recoveryOtp', response.data._dev_otp);",
+							"        console.log('✅ Recovery OTP saved:', response.data._dev_otp);",
+							"    }",
+							"    if (response.data.session) {",
+							"        pm.collectionVariables.set('recoveryAccessToken', response.data.session.accessToken);",
+							"    }",
+							"});"
+						]
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"email\": \"{{userEmail}}\"\n}"
+				},
+				"url": {
+					"raw": "http://localhost:5005/api/auth/forgot-password",
+					"protocol": "http",
+					"host": ["localhost"],
+					"port": "5005",
+					"path": ["api", "auth", "forgot-password"]
+				}
+			},
+			"description": "Initiate password recovery process"
+		},
+		{
+			"name": "6. Recover Account (Token-Based)",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test('Password reset successful', function () {",
+							"    pm.response.to.have.status(200);",
+							"});",
+							"",
+							"pm.test('Response confirms password reset', function () {",
+							"    const response = pm.response.json();",
+							"    pm.expect(response.success).to.equal(true);",
+							"    pm.expect(response.data.message).to.include('Password reset successfully');",
+							"});"
+						]
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					},
+					{
+						"key": "Authorization",
+						"value": "Bearer {{recoveryAccessToken}}"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"newPassword\": \"NewPass@456\",\n  \"confirmPassword\": \"NewPass@456\"\n}"
+				},
+				"url": {
+					"raw": "http://localhost:5005/api/auth/recover-account",
+					"protocol": "http",
+					"host": ["localhost"],
+					"port": "5005",
+					"path": ["api", "auth", "recover-account"]
+				}
+			},
+			"description": "Reset password using token from forgot-password endpoint"
+		},
+		{
+			"name": "7. Resend OTP",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test('OTP resent successfully', function () {",
+							"    pm.response.to.have.status(200);",
+							"});",
+							"",
+							"pm.test('Save new OTP', function () {",
+							"    const response = pm.response.json();",
+							"    pm.expect(response.success).to.equal(true);",
+							"    if (response.data._dev_otp) {",
+							"        pm.collectionVariables.set('signupOtp', response.data._dev_otp);",
+							"        console.log('✅ New OTP saved:', response.data._dev_otp);",
+							"    }",
+							"});"
+						]
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"email\": \"{{userEmail}}\"\n}"
+				},
+				"url": {
+					"raw": "http://localhost:5005/api/auth/resend-otp",
+					"protocol": "http",
+					"host": ["localhost"],
+					"port": "5005",
+					"path": ["api", "auth", "resend-otp"]
+				}
+			},
+			"description": "Request a new OTP if the original was lost"
+		},
+		{
+			"name": "8. Send Verification OTP",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test('Verification OTP sent', function () {",
+							"    pm.response.to.have.status(200);",
+							"});",
+							"",
+							"pm.test('Save verification OTP', function () {",
+							"    const response = pm.response.json();",
+							"    pm.expect(response.success).to.equal(true);",
+							"    if (response.data.otp) {",
+							"        pm.collectionVariables.set('verificationOtp', response.data.otp);",
+							"        console.log('✅ Verification OTP saved:', response.data.otp);",
+							"    }",
+							"});"
+						]
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"email\": \"{{userEmail}}\"\n}"
+				},
+				"url": {
+					"raw": "http://localhost:5005/api/auth/send-verification-otp",
+					"protocol": "http",
+					"host": ["localhost"],
+					"port": "5005",
+					"path": ["api", "auth", "send-verification-otp"]
+				}
+			},
+			"description": "Send verification OTP for unverified users"
+		},
+		{
+			"name": "ERROR - Invalid Email Format",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test('Should return validation error', function () {",
+							"    pm.response.to.have.status(400);",
+							"});",
+							"",
+							"pm.test('Error response format', function () {",
+							"    const response = pm.response.json();",
+							"    pm.expect(response.success).to.equal(false);",
+							"    pm.expect(response.error.code).to.equal('VALIDATION_ERROR');",
+							"});"
+						]
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"firstName\": \"John\",\n  \"lastName\": \"Doe\",\n  \"email\": \"invalid-email-format\",\n  \"password\": \"Test@1234\",\n  \"confirmPassword\": \"Test@1234\"\n}"
+				},
+				"url": {
+					"raw": "http://localhost:5005/api/auth/signup",
+					"protocol": "http",
+					"host": ["localhost"],
+					"port": "5005",
+					"path": ["api", "auth", "signup"]
+				}
+			},
+			"description": "Test error handling for invalid email format"
+		},
+		{
+			"name": "ERROR - Weak Password",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test('Should return validation error', function () {",
+							"    pm.response.to.have.status(400);",
+							"});",
+							"",
+							"pm.test('Error for weak password', function () {",
+							"    const response = pm.response.json();",
+							"    pm.expect(response.success).to.equal(false);",
+							"    pm.expect(response.error.code).to.equal('VALIDATION_ERROR');",
+							"});"
+						]
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"firstName\": \"John\",\n  \"lastName\": \"Doe\",\n  \"email\": \"test@example.com\",\n  \"password\": \"weak\",\n  \"confirmPassword\": \"weak\"\n}"
+				},
+				"url": {
+					"raw": "http://localhost:5005/api/auth/signup",
+					"protocol": "http",
+					"host": ["localhost"],
+					"port": "5005",
+					"path": ["api", "auth", "signup"]
+				}
+			},
+			"description": "Test error handling for weak password"
+		},
+		{
+			"name": "ERROR - Invalid OTP",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test('Should return OTP invalid error', function () {",
+							"    pm.response.to.have.status(400);",
+							"});",
+							"",
+							"pm.test('Error for invalid OTP', function () {",
+							"    const response = pm.response.json();",
+							"    pm.expect(response.success).to.equal(false);",
+							"    pm.expect(response.error.code).to.equal('OTP_INVALID');",
+							"});"
+						]
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"email\": \"{{userEmail}}\",\n  \"otp\": \"000000\"\n}"
+				},
+				"url": {
+					"raw": "http://localhost:5005/api/auth/verify-otp",
+					"protocol": "http",
+					"host": ["localhost"],
+					"port": "5005",
+					"path": ["api", "auth", "verify-otp"]
+				}
+			},
+			"description": "Test error handling for invalid OTP"
+		},
+		{
+			"name": "ERROR - Missing Required Fields",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test('Should return validation error', function () {",
+							"    pm.response.to.have.status(400);",
+							"});",
+							"",
+							"pm.test('Error for missing fields', function () {",
+							"    const response = pm.response.json();",
+							"    pm.expect(response.success).to.equal(false);",
+							"});"
+						]
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"firstName\": \"John\",\n  \"lastName\": \"Doe\"\n}"
+				},
+				"url": {
+					"raw": "http://localhost:5005/api/auth/signup",
+					"protocol": "http",
+					"host": ["localhost"],
+					"port": "5005",
+					"path": ["api", "auth", "signup"]
+				}
+			},
+			"description": "Test error handling for missing required fields"
+		}
+	],
+	"variable": [
+		{
+			"key": "accessToken",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "refreshToken",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "userEmail",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "signupOtp",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "recoveryOtp",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "testEmail",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "recoveryAccessToken",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "verificationOtp",
+			"value": "",
+			"type": "string"
+		}
+	]
+}

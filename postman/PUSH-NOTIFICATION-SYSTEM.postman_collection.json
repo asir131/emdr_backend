@@ -1,0 +1,160 @@
+{
+  "info": {
+    "name": "MY-EMDR Push Notification System",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl",   "value": "http://localhost:5005/api" },
+    { "key": "authToken", "value": "YOUR_JWT_TOKEN_HERE" }
+  ],
+  "item": [
+    {
+      "name": "Device Token",
+      "item": [
+        {
+          "name": "Register FCM Token",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type",  "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{authToken}}" }
+            ],
+            "url": { "raw": "{{baseUrl}}/notifications/token", "host": ["{{baseUrl}}"], "path": ["notifications","token"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"fcmToken\": \"eXaMpLeToKeN_device_token_here_123456789\",\n  \"platform\": \"android\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Remove FCM Token (Logout)",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{authToken}}" }
+            ],
+            "url": { "raw": "{{baseUrl}}/notifications/token", "host": ["{{baseUrl}}"], "path": ["notifications","token"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "My Notifications",
+      "item": [
+        {
+          "name": "Get My Notifications",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{authToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/notifications?page=1&limit=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["notifications"],
+              "query": [
+                { "key": "page",  "value": "1" },
+                { "key": "limit", "value": "20" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Mark Single Notification as Read",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{authToken}}" }
+            ],
+            "url": { "raw": "{{baseUrl}}/notifications/NOTIFICATION_ID_HERE/read", "host": ["{{baseUrl}}"], "path": ["notifications","NOTIFICATION_ID_HERE","read"] }
+          }
+        },
+        {
+          "name": "Mark All Notifications as Read",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{authToken}}" }
+            ],
+            "url": { "raw": "{{baseUrl}}/notifications/read-all", "host": ["{{baseUrl}}"], "path": ["notifications","read-all"] }
+          }
+        },
+        {
+          "name": "Delete Notification",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{authToken}}" }
+            ],
+            "url": { "raw": "{{baseUrl}}/notifications/NOTIFICATION_ID_HERE", "host": ["{{baseUrl}}"], "path": ["notifications","NOTIFICATION_ID_HERE"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Admin — Send Notifications",
+      "item": [
+        {
+          "name": "Send to Specific User",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type",  "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{authToken}}" }
+            ],
+            "url": { "raw": "{{baseUrl}}/notifications/send/user", "host": ["{{baseUrl}}"], "path": ["notifications","send","user"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"userId\": \"USER_OBJECT_ID_HERE\",\n  \"title\": \"Session Reminder\",\n  \"body\": \"Your EMDR session starts in 15 minutes.\",\n  \"data\": {\n    \"type\": \"session_reminder\",\n    \"sessionId\": \"abc123\"\n  }\n}"
+            }
+          }
+        },
+        {
+          "name": "Broadcast to All Users",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type",  "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{authToken}}" }
+            ],
+            "url": { "raw": "{{baseUrl}}/notifications/send/broadcast", "host": ["{{baseUrl}}"], "path": ["notifications","send","broadcast"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"New Feature Available!\",\n  \"body\": \"Check out the latest updates in MY EMDR.\",\n  \"data\": {\n    \"type\": \"announcement\"\n  }\n}"
+            }
+          }
+        },
+        {
+          "name": "Broadcast to Admins Only",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type",  "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{authToken}}" }
+            ],
+            "url": { "raw": "{{baseUrl}}/notifications/send/broadcast", "host": ["{{baseUrl}}"], "path": ["notifications","send","broadcast"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Admin Alert\",\n  \"body\": \"New user registration spike detected.\",\n  \"role\": \"admin\",\n  \"data\": {\n    \"type\": \"admin_alert\"\n  }\n}"
+            }
+          }
+        },
+        {
+          "name": "Send to Topic",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type",  "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{authToken}}" }
+            ],
+            "url": { "raw": "{{baseUrl}}/notifications/send/topic", "host": ["{{baseUrl}}"], "path": ["notifications","send","topic"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"topic\": \"general\",\n  \"title\": \"Weekly Wellness Tip\",\n  \"body\": \"Take 5 minutes today for mindful breathing.\",\n  \"data\": {\n    \"type\": \"wellness_tip\"\n  }\n}"
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

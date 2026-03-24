@@ -1,0 +1,335 @@
+{
+	"info": {
+		"_postman_id": "verify-email-token-001",
+		"name": "Verify Email With Token - Complete Flow",
+		"description": "এই collection টি signup করার পর token দিয়ে email verify করার জন্য। যদি user signup করে কিন্তু OTP verify না করে, পরে আবার signup করলে নতুন OTP পাঠাবে।",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "1. Signup - New User",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"// Save access token and refresh token",
+							"if (pm.response.code === 201) {",
+							"    const response = pm.response.json();",
+							"    pm.environment.set('accessToken', response.data.session.accessToken);",
+							"    pm.environment.set('refreshToken', response.data.session.refreshToken);",
+							"    pm.environment.set('userEmail', response.data.email);",
+							"    ",
+							"    // Save OTP if in development mode",
+							"    if (response.data._dev_otp) {",
+							"        pm.environment.set('otp', response.data._dev_otp);",
+							"        console.log('OTP:', response.data._dev_otp);",
+							"    }",
+							"    ",
+							"    pm.test('Signup successful', function() {",
+							"        pm.expect(response.success).to.be.true;",
+							"        pm.expect(response.data.message).to.include('verify your email');",
+							"    });",
+							"}"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"firstName\": \"Rakib\",\n  \"lastName\": \"Ahmed\",\n  \"email\": \"rakib@example.com\",\n  \"password\": \"Test@1234\",\n  \"confirmPassword\": \"Test@1234\"\n}"
+				},
+				"url": {
+					"raw": "{{baseUrl}}/api/auth/signup",
+					"host": [
+						"{{baseUrl}}"
+					],
+					"path": [
+						"api",
+						"auth",
+						"signup"
+					]
+				},
+				"description": "নতুন user signup করুন। Response এ token এবং OTP পাবেন (development mode এ)।"
+			},
+			"response": []
+		},
+		{
+			"name": "2. Verify Email With Token",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"if (pm.response.code === 200) {",
+							"    const response = pm.response.json();",
+							"    ",
+							"    pm.test('Email verified successfully', function() {",
+							"        pm.expect(response.success).to.be.true;",
+							"        pm.expect(response.data.message).to.include('verified successfully');",
+							"        pm.expect(response.data.user.isVerified).to.be.true;",
+							"    });",
+							"}"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "{{accessToken}}",
+							"type": "string"
+						}
+					]
+				},
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"otp\": \"{{otp}}\"\n}"
+				},
+				"url": {
+					"raw": "{{baseUrl}}/api/auth/verify-email-with-token",
+					"host": [
+						"{{baseUrl}}"
+					],
+					"path": [
+						"api",
+						"auth",
+						"verify-email-with-token"
+					]
+				},
+				"description": "Signup করার পর পাওয়া token দিয়ে email verify করুন। Header এ Bearer token দিতে হবে।"
+			},
+			"response": []
+		},
+		{
+			"name": "3. Signup Again - Same Email (Unverified)",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"// This should resend OTP if email exists but not verified",
+							"if (pm.response.code === 201) {",
+							"    const response = pm.response.json();",
+							"    pm.environment.set('accessToken', response.data.session.accessToken);",
+							"    pm.environment.set('refreshToken', response.data.session.refreshToken);",
+							"    ",
+							"    if (response.data._dev_otp) {",
+							"        pm.environment.set('otp', response.data._dev_otp);",
+							"        console.log('New OTP:', response.data._dev_otp);",
+							"    }",
+							"    ",
+							"    pm.test('New OTP sent for unverified email', function() {",
+							"        pm.expect(response.success).to.be.true;",
+							"        pm.expect(response.data.message).to.include('verify your email');",
+							"    });",
+							"}"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"firstName\": \"Rakib\",\n  \"lastName\": \"Ahmed\",\n  \"email\": \"rakib@example.com\",\n  \"password\": \"Test@1234\",\n  \"confirmPassword\": \"Test@1234\"\n}"
+				},
+				"url": {
+					"raw": "{{baseUrl}}/api/auth/signup",
+					"host": [
+						"{{baseUrl}}"
+					],
+					"path": [
+						"api",
+						"auth",
+						"signup"
+					]
+				},
+				"description": "একই email দিয়ে আবার signup করুন (যদি আগের OTP verify না করা থাকে)। নতুন OTP এবং token পাবেন।"
+			},
+			"response": []
+		},
+		{
+			"name": "4. Resend OTP (Alternative Method)",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"if (pm.response.code === 200) {",
+							"    const response = pm.response.json();",
+							"    ",
+							"    if (response.data._dev_otp) {",
+							"        pm.environment.set('otp', response.data._dev_otp);",
+							"        console.log('Resent OTP:', response.data._dev_otp);",
+							"    }",
+							"    ",
+							"    pm.test('OTP resent successfully', function() {",
+							"        pm.expect(response.success).to.be.true;",
+							"        pm.expect(response.data.message).to.include('OTP sent');",
+							"    });",
+							"}"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"email\": \"{{userEmail}}\"\n}"
+				},
+				"url": {
+					"raw": "{{baseUrl}}/api/auth/resend-otp",
+					"host": [
+						"{{baseUrl}}"
+					],
+					"path": [
+						"api",
+						"auth",
+						"resend-otp"
+					]
+				},
+				"description": "যদি OTP না পান বা expire হয়ে যায়, তাহলে নতুন OTP পাঠানোর জন্য এই API ব্যবহার করুন।"
+			},
+			"response": []
+		},
+		{
+			"name": "5. Verify OTP (Without Token)",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"if (pm.response.code === 200) {",
+							"    const response = pm.response.json();",
+							"    ",
+							"    pm.test('Email verified successfully', function() {",
+							"        pm.expect(response.success).to.be.true;",
+							"        pm.expect(response.data.user.isVerified).to.be.true;",
+							"    });",
+							"}"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"email\": \"{{userEmail}}\",\n  \"otp\": \"{{otp}}\"\n}"
+				},
+				"url": {
+					"raw": "{{baseUrl}}/api/auth/verify-otp",
+					"host": [
+						"{{baseUrl}}"
+					],
+					"path": [
+						"api",
+						"auth",
+						"verify-otp"
+					]
+				},
+				"description": "Token ছাড়া শুধু email এবং OTP দিয়ে verify করার পুরাতন method।"
+			},
+			"response": []
+		},
+		{
+			"name": "6. Login After Verification",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"if (pm.response.code === 200) {",
+							"    const response = pm.response.json();",
+							"    pm.environment.set('accessToken', response.data.session.accessToken);",
+							"    pm.environment.set('refreshToken', response.data.session.refreshToken);",
+							"    ",
+							"    pm.test('Login successful', function() {",
+							"        pm.expect(response.success).to.be.true;",
+							"        pm.expect(response.data.user.isVerified).to.be.true;",
+							"    });",
+							"}"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"email\": \"{{userEmail}}\",\n  \"password\": \"Test@1234\"\n}"
+				},
+				"url": {
+					"raw": "{{baseUrl}}/api/auth/login",
+					"host": [
+						"{{baseUrl}}"
+					],
+					"path": [
+						"api",
+						"auth",
+						"login"
+					]
+				},
+				"description": "Email verify করার পর login করুন।"
+			},
+			"response": []
+		}
+	],
+	"variable": [
+		{
+			"key": "baseUrl",
+			"value": "http://localhost:5000",
+			"type": "string"
+		}
+	]
+}

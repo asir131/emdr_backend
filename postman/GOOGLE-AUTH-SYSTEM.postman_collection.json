@@ -1,0 +1,227 @@
+{
+  "info": {
+    "name": "MY-EMDR Google Auth System",
+    "description": "Complete Google OAuth + Email Auth flow for MY EMDR",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl",      "value": "http://localhost:5005/api" },
+    { "key": "authToken",    "value": "" },
+    { "key": "refreshToken", "value": "" }
+  ],
+  "item": [
+    {
+      "name": "Google Auth",
+      "item": [
+        {
+          "name": "Google Sign-In / Sign-Up",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const res = pm.response.json();",
+                  "if (res.success && res.data?.session) {",
+                  "  pm.collectionVariables.set('authToken',    res.data.session.accessToken);",
+                  "  pm.collectionVariables.set('refreshToken', res.data.session.refreshToken);",
+                  "  console.log('isNewUser:', res.data.isNewUser);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": {
+              "raw": "{{baseUrl}}/auth/google",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "google"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"idToken\": \"PASTE_GOOGLE_ID_TOKEN_HERE\"\n}"
+            },
+            "description": "Send Google idToken from frontend SDK. Returns JWT tokens. Creates account if new user, logs in if existing. Also links Google to existing email accounts."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Email Auth",
+      "item": [
+        {
+          "name": "1. Signup",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const res = pm.response.json();",
+                  "if (res.success && res.data?.session) {",
+                  "  pm.collectionVariables.set('authToken',    res.data.session.accessToken);",
+                  "  pm.collectionVariables.set('refreshToken', res.data.session.refreshToken);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{baseUrl}}/auth/signup", "host": ["{{baseUrl}}"], "path": ["auth","signup"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"firstName\": \"John\",\n  \"lastName\": \"Doe\",\n  \"email\": \"john@example.com\",\n  \"password\": \"Test@1234\",\n  \"confirmPassword\": \"Test@1234\"\n}"
+            }
+          }
+        },
+        {
+          "name": "2. Verify OTP",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{baseUrl}}/auth/verify-otp", "host": ["{{baseUrl}}"], "path": ["auth","verify-otp"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"john@example.com\",\n  \"otp\": \"123456\"\n}"
+            }
+          }
+        },
+        {
+          "name": "3. Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const res = pm.response.json();",
+                  "if (res.success && res.data?.session) {",
+                  "  pm.collectionVariables.set('authToken',    res.data.session.accessToken);",
+                  "  pm.collectionVariables.set('refreshToken', res.data.session.refreshToken);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{baseUrl}}/auth/login", "host": ["{{baseUrl}}"], "path": ["auth","login"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"john@example.com\",\n  \"password\": \"Test@1234\"\n}"
+            }
+          }
+        },
+        {
+          "name": "4. Resend OTP",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{baseUrl}}/auth/resend-otp", "host": ["{{baseUrl}}"], "path": ["auth","resend-otp"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"john@example.com\"\n}"
+            }
+          }
+        },
+        {
+          "name": "5. Forgot Password",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{baseUrl}}/auth/forgot-password", "host": ["{{baseUrl}}"], "path": ["auth","forgot-password"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"john@example.com\"\n}"
+            }
+          }
+        },
+        {
+          "name": "6. Send Verification OTP (verify recovery OTP)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{baseUrl}}/auth/send-verification-otp", "host": ["{{baseUrl}}"], "path": ["auth","send-verification-otp"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"john@example.com\",\n  \"otp\": \"123456\"\n}"
+            }
+          }
+        },
+        {
+          "name": "7. Recover Account (reset password)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type",  "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{authToken}}" }
+            ],
+            "url": { "raw": "{{baseUrl}}/auth/recover-account", "host": ["{{baseUrl}}"], "path": ["auth","recover-account"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"newPassword\": \"NewPass@5678\",\n  \"confirmPassword\": \"NewPass@5678\"\n}"
+            }
+          }
+        },
+        {
+          "name": "8. Verify Email With Token",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type",  "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{authToken}}" }
+            ],
+            "url": { "raw": "{{baseUrl}}/auth/verify-email-with-token", "host": ["{{baseUrl}}"], "path": ["auth","verify-email-with-token"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"otp\": \"123456\"\n}"
+            }
+          }
+        },
+        {
+          "name": "9. Refresh Token",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const res = pm.response.json();",
+                  "if (res.success && res.data?.accessToken) {",
+                  "  pm.collectionVariables.set('authToken', res.data.accessToken);",
+                  "  if (res.data.refreshToken) pm.collectionVariables.set('refreshToken', res.data.refreshToken);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{baseUrl}}/auth/refresh-token", "host": ["{{baseUrl}}"], "path": ["auth","refresh-token"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"refreshToken\": \"{{refreshToken}}\"\n}"
+            }
+          }
+        },
+        {
+          "name": "10. Logout",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type",  "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{authToken}}" }
+            ],
+            "url": { "raw": "{{baseUrl}}/auth/logout", "host": ["{{baseUrl}}"], "path": ["auth","logout"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"refreshToken\": \"{{refreshToken}}\"\n}"
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,330 @@
+{
+	"info": {
+		"_postman_id": "send-verification-otp-test",
+		"name": "Send Verification OTP - Test Collection",
+		"description": "Test collection for send-verification-otp endpoint with both modes:\n\nMode 1: Send OTP (email only)\nMode 2: Verify OTP (email + otp)",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Mode 1 - Send OTP",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test('Status is 200', function () {",
+							"    pm.response.to.have.status(200);",
+							"});",
+							"",
+							"pm.test('Response has correct structure', function () {",
+							"    const response = pm.response.json();",
+							"    pm.expect(response.success).to.equal(true);",
+							"    pm.expect(response.data).to.have.property('message');",
+							"    pm.expect(response.data).to.have.property('_dev_otp');",
+							"});",
+							"",
+							"pm.test('Save OTP for next request', function () {",
+							"    const response = pm.response.json();",
+							"    pm.collectionVariables.set('verificationOtp', response.data._dev_otp);",
+							"    console.log('✅ OTP saved:', response.data._dev_otp);",
+							"});"
+						]
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"email\": \"testuser@myemdr.com\"\n}"
+				},
+				"url": {
+					"raw": "http://localhost:5005/api/auth/send-verification-otp",
+					"protocol": "http",
+					"host": ["localhost"],
+					"port": "5005",
+					"path": ["api", "auth", "send-verification-otp"]
+				}
+			},
+			"description": "Send OTP to email (Mode 1)\n\nRequest: {\"email\": \"testuser@myemdr.com\"}\nResponse: {\"message\": \"OTP sent successfully.\", \"_dev_otp\": \"123456\"}"
+		},
+		{
+			"name": "Mode 2 - Verify OTP",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test('Status is 200', function () {",
+							"    pm.response.to.have.status(200);",
+							"});",
+							"",
+							"pm.test('Response has correct structure', function () {",
+							"    const response = pm.response.json();",
+							"    pm.expect(response.success).to.equal(true);",
+							"    pm.expect(response.data).to.have.property('message');",
+							"    pm.expect(response.data).to.have.property('accessToken');",
+							"});",
+							"",
+							"pm.test('Save access token', function () {",
+							"    const response = pm.response.json();",
+							"    pm.collectionVariables.set('accessToken', response.data.accessToken);",
+							"    console.log('✅ Access token saved');",
+							"});"
+						]
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"email\": \"testuser@myemdr.com\",\n  \"otp\": \"{{verificationOtp}}\"\n}"
+				},
+				"url": {
+					"raw": "http://localhost:5005/api/auth/send-verification-otp",
+					"protocol": "http",
+					"host": ["localhost"],
+					"port": "5005",
+					"path": ["api", "auth", "send-verification-otp"]
+				}
+			},
+			"description": "Verify OTP and get access token (Mode 2)\n\nRequest: {\"email\": \"testuser@myemdr.com\", \"otp\": \"123456\"}\nResponse: {\"message\": \"OTP verified successfully. You can now reset your password.\", \"accessToken\": \"...\"}"
+		},
+		{
+			"name": "ERROR - Invalid Email",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test('Status is 400', function () {",
+							"    pm.response.to.have.status(400);",
+							"});",
+							"",
+							"pm.test('Error response format', function () {",
+							"    const response = pm.response.json();",
+							"    pm.expect(response.success).to.equal(false);",
+							"    pm.expect(response.error.code).to.equal('VALIDATION_ERROR');",
+							"});"
+						]
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"email\": \"invalid-email-format\"\n}"
+				},
+				"url": {
+					"raw": "http://localhost:5005/api/auth/send-verification-otp",
+					"protocol": "http",
+					"host": ["localhost"],
+					"port": "5005",
+					"path": ["api", "auth", "send-verification-otp"]
+				}
+			},
+			"description": "Test error handling for invalid email format"
+		},
+		{
+			"name": "ERROR - Invalid OTP Format",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test('Status is 400', function () {",
+							"    pm.response.to.have.status(400);",
+							"});",
+							"",
+							"pm.test('Error for invalid OTP format', function () {",
+							"    const response = pm.response.json();",
+							"    pm.expect(response.success).to.equal(false);",
+							"    pm.expect(response.error.code).to.equal('VALIDATION_ERROR');",
+							"});"
+						]
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"email\": \"testuser@myemdr.com\",\n  \"otp\": \"abc123\"\n}"
+				},
+				"url": {
+					"raw": "http://localhost:5005/api/auth/send-verification-otp",
+					"protocol": "http",
+					"host": ["localhost"],
+					"port": "5005",
+					"path": ["api", "auth", "send-verification-otp"]
+				}
+			},
+			"description": "Test error handling for invalid OTP format (must be 6 digits)"
+		},
+		{
+			"name": "ERROR - Invalid OTP",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test('Status is 400', function () {",
+							"    pm.response.to.have.status(400);",
+							"});",
+							"",
+							"pm.test('Error for invalid OTP', function () {",
+							"    const response = pm.response.json();",
+							"    pm.expect(response.success).to.equal(false);",
+							"    pm.expect(response.error.code).to.equal('OTP_INVALID');",
+							"});"
+						]
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"email\": \"testuser@myemdr.com\",\n  \"otp\": \"000000\"\n}"
+				},
+				"url": {
+					"raw": "http://localhost:5005/api/auth/send-verification-otp",
+					"protocol": "http",
+					"host": ["localhost"],
+					"port": "5005",
+					"path": ["api", "auth", "send-verification-otp"]
+				}
+			},
+			"description": "Test error handling for invalid OTP (wrong OTP)"
+		},
+		{
+			"name": "ERROR - User Not Found",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test('Status is 404', function () {",
+							"    pm.response.to.have.status(404);",
+							"});",
+							"",
+							"pm.test('Error for user not found', function () {",
+							"    const response = pm.response.json();",
+							"    pm.expect(response.success).to.equal(false);",
+							"    pm.expect(response.error.code).to.equal('USER_NOT_FOUND');",
+							"});"
+						]
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"email\": \"nonexistent@example.com\"\n}"
+				},
+				"url": {
+					"raw": "http://localhost:5005/api/auth/send-verification-otp",
+					"protocol": "http",
+					"host": ["localhost"],
+					"port": "5005",
+					"path": ["api", "auth", "send-verification-otp"]
+				}
+			},
+			"description": "Test error handling for user not found"
+		},
+		{
+			"name": "ERROR - Email Already Verified",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test('Status is 400', function () {",
+							"    pm.response.to.have.status(400);",
+							"});",
+							"",
+							"pm.test('Error for already verified email', function () {",
+							"    const response = pm.response.json();",
+							"    pm.expect(response.success).to.equal(false);",
+							"    pm.expect(response.error.code).to.equal('VALIDATION_ERROR');",
+							"});"
+						]
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"email\": \"verified@example.com\"\n}"
+				},
+				"url": {
+					"raw": "http://localhost:5005/api/auth/send-verification-otp",
+					"protocol": "http",
+					"host": ["localhost"],
+					"port": "5005",
+					"path": ["api", "auth", "send-verification-otp"]
+				}
+			},
+			"description": "Test error handling for already verified email"
+		}
+	],
+	"variable": [
+		{
+			"key": "verificationOtp",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "accessToken",
+			"value": "",
+			"type": "string"
+		}
+	]
+}

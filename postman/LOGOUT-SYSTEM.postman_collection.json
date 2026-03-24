@@ -1,0 +1,391 @@
+{
+	"info": {
+		"_postman_id": "logout-system-001",
+		"name": "Logout System - Complete Flow",
+		"description": "Complete logout এবং token refresh system। এই collection এ login, logout, এবং token refresh এর সব scenarios আছে।",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "1. Login",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"if (pm.response.code === 200) {",
+							"    const response = pm.response.json();",
+							"    ",
+							"    // Save tokens",
+							"    pm.environment.set('accessToken', response.data.session.accessToken);",
+							"    pm.environment.set('refreshToken', response.data.session.refreshToken);",
+							"    pm.environment.set('userId', response.data.user.id);",
+							"    ",
+							"    console.log('✅ Login successful');",
+							"    console.log('Access Token:', response.data.session.accessToken.substring(0, 20) + '...');",
+							"    console.log('Refresh Token:', response.data.session.refreshToken.substring(0, 20) + '...');",
+							"    ",
+							"    pm.test('Login successful', function() {",
+							"        pm.expect(response.success).to.be.true;",
+							"        pm.expect(response.data.session.accessToken).to.exist;",
+							"        pm.expect(response.data.session.refreshToken).to.exist;",
+							"    });",
+							"}"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"email\": \"rakib@example.com\",\n  \"password\": \"Test@1234\"\n}"
+				},
+				"url": {
+					"raw": "{{baseUrl}}/api/auth/login",
+					"host": [
+						"{{baseUrl}}"
+					],
+					"path": [
+						"api",
+						"auth",
+						"login"
+					]
+				},
+				"description": "User login করুন। Response এ access token এবং refresh token পাবেন।"
+			},
+			"response": []
+		},
+		{
+			"name": "2. Access Protected Route",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"if (pm.response.code === 200) {",
+							"    console.log('✅ Protected route accessed successfully');",
+							"    ",
+							"    pm.test('Protected route accessible', function() {",
+							"        pm.expect(pm.response.code).to.equal(200);",
+							"    });",
+							"}"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "{{accessToken}}",
+							"type": "string"
+						}
+					]
+				},
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{baseUrl}}/api/protected-route",
+					"host": [
+						"{{baseUrl}}"
+					],
+					"path": [
+						"api",
+						"protected-route"
+					]
+				},
+				"description": "Access token দিয়ে protected route access করুন। এটা verify করবে token কাজ করছে কিনা।"
+			},
+			"response": []
+		},
+		{
+			"name": "3. Refresh Access Token",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"if (pm.response.code === 200) {",
+							"    const response = pm.response.json();",
+							"    ",
+							"    // Update access token",
+							"    pm.environment.set('accessToken', response.data.accessToken);",
+							"    ",
+							"    // If refresh token rotation is enabled, update refresh token too",
+							"    if (response.data.refreshToken) {",
+							"        pm.environment.set('refreshToken', response.data.refreshToken);",
+							"        console.log('✅ Tokens refreshed (with rotation)');",
+							"    } else {",
+							"        console.log('✅ Access token refreshed');",
+							"    }",
+							"    ",
+							"    pm.test('Token refresh successful', function() {",
+							"        pm.expect(response.success).to.be.true;",
+							"        pm.expect(response.data.accessToken).to.exist;",
+							"    });",
+							"}"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"refreshToken\": \"{{refreshToken}}\"\n}"
+				},
+				"url": {
+					"raw": "{{baseUrl}}/api/auth/refresh-token",
+					"host": [
+						"{{baseUrl}}"
+					],
+					"path": [
+						"api",
+						"auth",
+						"refresh-token"
+					]
+				},
+				"description": "Refresh token দিয়ে নতুন access token নিন। Access token expire হলে এই API call করবেন।"
+			},
+			"response": []
+		},
+		{
+			"name": "4. Logout",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"if (pm.response.code === 200) {",
+							"    const response = pm.response.json();",
+							"    ",
+							"    // Clear tokens from environment",
+							"    pm.environment.unset('accessToken');",
+							"    pm.environment.unset('refreshToken');",
+							"    ",
+							"    console.log('✅ Logged out successfully');",
+							"    console.log('🗑️ Tokens cleared from environment');",
+							"    ",
+							"    pm.test('Logout successful', function() {",
+							"        pm.expect(response.success).to.be.true;",
+							"        pm.expect(response.data.message).to.include('Logged out');",
+							"    });",
+							"}"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "{{accessToken}}",
+							"type": "string"
+						}
+					]
+				},
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"refreshToken\": \"{{refreshToken}}\"\n}"
+				},
+				"url": {
+					"raw": "{{baseUrl}}/api/auth/logout",
+					"host": [
+						"{{baseUrl}}"
+					],
+					"path": [
+						"api",
+						"auth",
+						"logout"
+					]
+				},
+				"description": "User logout করুন। এটা database থেকে refresh token invalidate করবে।"
+			},
+			"response": []
+		},
+		{
+			"name": "5. Try Access After Logout (Should Fail)",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"// This should fail because we logged out",
+							"if (pm.response.code === 401) {",
+							"    console.log('✅ Correctly blocked - user is logged out');",
+							"    ",
+							"    pm.test('Access denied after logout', function() {",
+							"        pm.expect(pm.response.code).to.equal(401);",
+							"    });",
+							"} else {",
+							"    console.log('❌ Security issue - should be blocked');",
+							"}"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "{{accessToken}}",
+							"type": "string"
+						}
+					]
+				},
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{baseUrl}}/api/protected-route",
+					"host": [
+						"{{baseUrl}}"
+					],
+					"path": [
+						"api",
+						"protected-route"
+					]
+				},
+				"description": "Logout করার পর protected route access করার চেষ্টা করুন। এটা fail করবে কারণ access token এখনও valid কিন্তু refresh token invalidate হয়ে গেছে।"
+			},
+			"response": []
+		},
+		{
+			"name": "6. Try Refresh After Logout (Should Fail)",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"// This should fail because refresh token was invalidated",
+							"if (pm.response.code === 401 || pm.response.code === 400) {",
+							"    console.log('✅ Correctly blocked - refresh token invalidated');",
+							"    ",
+							"    pm.test('Refresh token invalidated', function() {",
+							"        pm.expect([401, 400]).to.include(pm.response.code);",
+							"    });",
+							"} else {",
+							"    console.log('❌ Security issue - refresh should fail');",
+							"}"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"refreshToken\": \"{{refreshToken}}\"\n}"
+				},
+				"url": {
+					"raw": "{{baseUrl}}/api/auth/refresh-token",
+					"host": [
+						"{{baseUrl}}"
+					],
+					"path": [
+						"api",
+						"auth",
+						"refresh-token"
+					]
+				},
+				"description": "Logout করার পর refresh token দিয়ে নতুন access token নেওয়ার চেষ্টা করুন। এটা fail করবে কারণ database থেকে refresh token delete হয়ে গেছে।"
+			},
+			"response": []
+		},
+		{
+			"name": "7. Login Again",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"if (pm.response.code === 200) {",
+							"    const response = pm.response.json();",
+							"    ",
+							"    pm.environment.set('accessToken', response.data.session.accessToken);",
+							"    pm.environment.set('refreshToken', response.data.session.refreshToken);",
+							"    ",
+							"    console.log('✅ Re-login successful');",
+							"    ",
+							"    pm.test('Re-login successful', function() {",
+							"        pm.expect(response.success).to.be.true;",
+							"    });",
+							"}"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"email\": \"rakib@example.com\",\n  \"password\": \"Test@1234\"\n}"
+				},
+				"url": {
+					"raw": "{{baseUrl}}/api/auth/login",
+					"host": [
+						"{{baseUrl}}"
+					],
+					"path": [
+						"api",
+						"auth",
+						"login"
+					]
+				},
+				"description": "Logout করার পর আবার login করুন। নতুন tokens পাবেন।"
+			},
+			"response": []
+		}
+	],
+	"variable": [
+		{
+			"key": "baseUrl",
+			"value": "http://localhost:5000",
+			"type": "string"
+		}
+	]
+}
