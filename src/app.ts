@@ -9,12 +9,10 @@ import { env } from './config/env';
 
 const app = express();
 
-// Security middleware
 app.use(helmet());
 app.use(cors());
-app.use(mongoSanitize()); // Prevent NoSQL injection
+app.use(mongoSanitize()); 
 
-// Rate limiting
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 100,
@@ -24,11 +22,9 @@ const limiter = rateLimit({
 });
 app.use('/api', limiter);
 
-// Body parser
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
-// Health check
 app.get('/health', (_req, res) => {
   res.json({ 
     status: 'ok', 
@@ -37,13 +33,10 @@ app.get('/health', (_req, res) => {
   });
 });
 
-// API routes
 app.use('/api', routes);
 
-// 404 handler (must be after all routes)
 app.use(notFoundHandler);
 
-// Global error handler (must be last)
 app.use(errorHandler);
 
 export default app;

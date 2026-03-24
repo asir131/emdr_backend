@@ -20,7 +20,6 @@ const createTransporter = () => {
   });
 };
 
-// ─── Pixel-perfect logo: watercolor tree canopy + cupped hands ───────────────
 const LOGO_SVG = `<svg width="120" height="130" viewBox="0 0 120 130" xmlns="http://www.w3.org/2000/svg">
   <defs>
     <!-- Watercolor teal-green gradients for canopy blobs -->
@@ -222,7 +221,6 @@ const emailTemplate = (title: string, bodyContent: string): string => `<!DOCTYPE
 </body>
 </html>`;
 
-// ─── Core send function ───────────────────────────────────────────────────────
 export const sendEmail = async (options: EmailOptions): Promise<void> => {
   try {
     if (env.NODE_ENV === 'development' && !env.EMAIL_USER) {
@@ -256,7 +254,6 @@ export const sendEmail = async (options: EmailOptions): Promise<void> => {
   }
 };
 
-// ─── OTP Verification Email ───────────────────────────────────────────────────
 export const sendOTPEmail = async (
   email: string,
   otp: string,
@@ -327,7 +324,6 @@ export const sendOTPEmail = async (
   });
 };
 
-// ─── Password Reset Email ─────────────────────────────────────────────────────
 export const sendPasswordResetEmail = async (
   email: string,
   otp: string,

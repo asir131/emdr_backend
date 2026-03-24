@@ -9,20 +9,16 @@ import {
 
 const router = Router();
     
-// ── All routes require authentication ──────────────────────────────────────
 router.use(authenticate);
 
-// ── Device token management ─────────────────────────────────────────────────
 router.post  ('/token',         validate(registerTokenSchema), ctrl.registerToken);
 router.delete('/token',                                        ctrl.removeToken);
 
-// ── User: read own notifications ────────────────────────────────────────────
 router.get   ('/',              validate(paginationSchema),    ctrl.getMyNotifications);
 router.patch ('/read-all',                                     ctrl.markAsRead);
 router.patch ('/:id/read',      validate(markReadSchema),      ctrl.markAsRead);
 router.delete('/:id',           validate(markReadSchema),      ctrl.deleteNotification);
 
-// ── Admin: send notifications ───────────────────────────────────────────────
 router.post  ('/send/user',     validate(sendToUserSchema),    ctrl.sendToUser);
 router.post  ('/send/broadcast',validate(broadcastSchema),     ctrl.broadcast);
 router.post  ('/send/topic',    validate(topicSchema),         ctrl.sendToTopic);

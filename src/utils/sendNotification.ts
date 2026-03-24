@@ -8,7 +8,6 @@ export interface NotificationPayload {
   imageUrl?: string;
 }
 
-/** Send to a single FCM token */
 export const sendToToken = async (token: string, payload: NotificationPayload) => {
   const { title, body, data, imageUrl } = payload;
   return messaging.send({
@@ -20,7 +19,6 @@ export const sendToToken = async (token: string, payload: NotificationPayload) =
   });
 };
 
-/** Send to multiple FCM tokens (max 500 per call) */
 export const sendToMultiple = async (tokens: string[], payload: NotificationPayload) => {
   if (!tokens.length) return null;
   const { title, body, data, imageUrl } = payload;
@@ -34,7 +32,6 @@ export const sendToMultiple = async (tokens: string[], payload: NotificationPayl
   return messaging.sendEachForMulticast(message);
 };
 
-/** Send to a Firebase topic */
 export const sendToTopic = async (topic: string, payload: NotificationPayload) => {
   const { title, body, data, imageUrl } = payload;
   return messaging.send({

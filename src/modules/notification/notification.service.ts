@@ -5,7 +5,7 @@ import { ApiError } from '../../utils/ApiError';
 
 export const notificationService = {
 
-  /** Save FCM token for authenticated user */
+  
   async registerToken(userId: string, fcmToken: string, platform: string) {
     const user = await User.findByIdAndUpdate(
       userId,
@@ -16,12 +16,12 @@ export const notificationService = {
     return user;
   },
 
-  /** Remove FCM token on logout */
+
   async removeToken(userId: string) {
     await User.findByIdAndUpdate(userId, { $unset: { fcmToken: 1, fcmPlatform: 1 } });
   },
 
-  /** Send notification to a specific user */
+
   async sendToUser(userId: string, payload: NotificationPayload) {
     const user = await User.findById(userId).select('fcmToken');
     if (!user) throw ApiError.userNotFound();
@@ -35,7 +35,7 @@ export const notificationService = {
     return { fcmResult, notification };
   },
 
-  /** Broadcast to all users (or filtered by role) */
+
   async broadcast(payload: NotificationPayload, role?: string) {
     const filter = role ? { fcmToken: { $exists: true }, role } : { fcmToken: { $exists: true } };
     const users = await User.find(filter).select('_id fcmToken');
@@ -55,12 +55,12 @@ export const notificationService = {
     };
   },
 
-  /** Send to a Firebase topic */
+
   async sendToTopic(topic: string, payload: NotificationPayload) {
     return sendToTopic(topic, payload);
   },
 
-  /** Get paginated notifications for a user */
+
   async getMyNotifications(userId: string, page: number, limit: number) {
     const skip = (page - 1) * limit;
     const [notifications, total, unreadCount] = await Promise.all([
@@ -71,14 +71,14 @@ export const notificationService = {
     return { notifications, total, unreadCount, page, limit };
   },
 
-  /** Mark one or all notifications as read */
+
   async markAsRead(userId: string, notificationId?: string) {
     const filter = notificationId ? { _id: notificationId, userId } : { userId, isRead: false };
     const { modifiedCount } = await Notification.updateMany(filter, { isRead: true });
     return { updated: modifiedCount };
   },
 
-  /** Delete a notification */
+
   async deleteNotification(userId: string, notificationId: string) {
     const result = await Notification.findOneAndDelete({ _id: notificationId, userId });
     if (!result) throw new ApiError(404, 'NOT_FOUND', 'Notification not found');

@@ -10,24 +10,22 @@ class Database {
         serverSelectionTimeoutMS: 5000,
       });
 
-      console.log('✅ MongoDB connected successfully');
+      console.log('MongoDB connected successfully');
 
-      // Handle connection events
       mongoose.connection.on('error', (error) => {
-        console.error('❌ MongoDB connection error:', error);
+        console.error('MongoDB connection error:', error);
       });
 
       mongoose.connection.on('disconnected', () => {
-        console.warn('⚠️ MongoDB disconnected');
+        console.warn('MongoDB disconnected');
       });
 
-      // Graceful shutdown
       process.on('SIGINT', async () => {
         await this.disconnect();
         process.exit(0);
       });
     } catch (error) {
-      console.error('❌ MongoDB connection failed:', error);
+      console.error('MongoDB connection failed:', error);
       process.exit(1);
     }
   }
@@ -35,9 +33,9 @@ class Database {
   async disconnect(): Promise<void> {
     try {
       await mongoose.disconnect();
-      console.log('✅ MongoDB disconnected gracefully');
+      console.log('MongoDB disconnected gracefully');
     } catch (error) {
-      console.error('❌ Error disconnecting from MongoDB:', error);
+      console.error('Error disconnecting from MongoDB:', error);
     }
   }
 

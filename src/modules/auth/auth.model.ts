@@ -133,7 +133,7 @@ const userSchema = new Schema<IUser>(
   }
 );
 
-// Indexes for performance
+
 userSchema.index({ email: 1 });
 userSchema.index({ createdAt: -1 });
 userSchema.index({ otpExpiresAt: 1 }, { expireAfterSeconds: 600 });

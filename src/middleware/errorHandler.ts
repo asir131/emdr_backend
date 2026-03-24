@@ -9,16 +9,16 @@ export const errorHandler = (
   res: Response,
   _next: NextFunction
 ): void => {
-  // Log error in development
+
   if (process.env.NODE_ENV === 'development') {
-    console.error('💥 Error:', {
+    console.error('Error:', {
       name: err.name,
       message: err.message,
       stack: err.stack,
     });
   }
 
-  // Handle Zod validation errors
+
   if (err instanceof ZodError) {
     const firstError = err.errors[0];
     const field = firstError.path[firstError.path.length - 1]?.toString();
@@ -37,7 +37,7 @@ export const errorHandler = (
     return;
   }
 
-  // Handle Mongoose validation errors
+  
   if (err instanceof mongoose.Error.ValidationError) {
     const firstError = Object.values(err.errors)[0];
     const field = firstError.path;
@@ -56,7 +56,7 @@ export const errorHandler = (
     return;
   }
 
-  // Handle Mongoose duplicate key error
+
   if (err.name === 'MongoServerError' && (err as any).code === 11000) {
     const field = Object.keys((err as any).keyPattern)[0];
     
@@ -74,7 +74,7 @@ export const errorHandler = (
     return;
   }
 
-  // Handle Mongoose CastError
+
   if (err instanceof mongoose.Error.CastError) {
     res.status(400).json({
       success: false,
@@ -90,7 +90,7 @@ export const errorHandler = (
     return;
   }
 
-  // Handle custom ApiError
+
   if (err instanceof ApiError) {
     res.status(err.statusCode).json({
       success: false,
@@ -106,7 +106,7 @@ export const errorHandler = (
     return;
   }
 
-  // Handle JWT errors
+ 
   if (err.name === 'JsonWebTokenError') {
     res.status(401).json({
       success: false,
@@ -135,7 +135,7 @@ export const errorHandler = (
     return;
   }
 
-  // Handle unexpected errors
+
   console.error('💥 Unexpected Error:', err);
   
   res.status(500).json({

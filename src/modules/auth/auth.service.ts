@@ -47,7 +47,7 @@ interface LoginResponse {
 }
 
 export class AuthService {
-  // ============ SIGNUP ============
+
   async signup(data: SignupData): Promise<SignupResponse> {
     const { firstName, lastName, email, password } = data;
 
@@ -161,7 +161,7 @@ export class AuthService {
     return response;
   }
 
-  // ============ VERIFY OTP ============
+
   async verifyOTP(email: string, otp: string): Promise<{ message: string; user: any }> {
     const user = await User.findOne({ email }).select('+otp +otpExpiresAt +otpAttempts');
 
@@ -213,7 +213,7 @@ export class AuthService {
     };
   }
 
-  // ============ RESEND OTP ============
+  // RESEND OTP
   async resendOTPRequest(email: string): Promise<{ message: string; accessToken: string; _dev_otp?: string }> {
     const user = await User.findOne({ email }).select('+otp +otpExpiresAt +otpAttempts');
 
@@ -256,7 +256,7 @@ export class AuthService {
     return response;
   }
 
-  // ============ LOGIN ============
+  // LOGIN 
   async login(data: LoginData): Promise<LoginResponse> {
     const { email, password } = data;
 
@@ -270,7 +270,7 @@ export class AuthService {
       throw ApiError.validationError('Please verify your email first');
     }
 
-    // Check account lock
+
     if (user.lockUntil && user.lockUntil > new Date()) {
       throw ApiError.tooManyRequests('Account locked. Try again later');
     }
@@ -288,7 +288,6 @@ export class AuthService {
       throw ApiError.unauthorized('Invalid email or password');
     }
 
-    // Reset login attempts on successful login
     user.loginAttempts = 0;
     user.lockUntil = undefined;
     user.lastLogin = new Date();
@@ -318,12 +317,12 @@ export class AuthService {
     };
   }
 
-  // ============ FORGOT PASSWORD ============
+  // FORGOT PASSWORD
   async forgotPassword(email: string): Promise<{ message: string; session: TokenPair; _dev_otp?: string }> {
     const user = await User.findOne({ email }).select('+recoveryOtp +recoveryOtpExpiresAt +recoveryOtpAttempts');
 
     if (!user) {
-      // Generate dummy tokens for security (don't reveal if email exists)
+
       const dummyPayload = {
         userId: 'dummy',
         role: 'user',
@@ -368,7 +367,7 @@ export class AuthService {
     return response;
   }
 
-  // ============ RECOVER ACCOUNT ============
+  // RECOVER ACCOUNT 
   async recoverAccount(userId: string, newPassword: string): Promise<{ message: string }> {
     const user = await User.findById(userId).select('+password');
 
@@ -387,8 +386,8 @@ export class AuthService {
     };
   }
 
-  // ============ RECOVER ACCOUNT WITH OTP (OLD METHOD) ============
-  // ============ SEND VERIFICATION OTP ============
+  // RECOVER ACCOUNT WITH OTP 
+  //  SEND VERIFICATION OTP 
   async sendVerificationOTP(email: string, otp?: string): Promise<{ message: string; accessToken?: string; _dev_otp?: string }> {
     const user = await User.findOne({ email }).select('+recoveryOtp +recoveryOtpExpiresAt +recoveryOtpAttempts +password');
 
@@ -396,7 +395,7 @@ export class AuthService {
       throw ApiError.userNotFound();
     }
 
-    // If OTP provided, verify recovery OTP (forgot password flow)
+
     if (otp) {
       if (!user.recoveryOtp || !user.recoveryOtpExpiresAt) {
         throw ApiError.validationError('No recovery OTP found. Please request a new one');
@@ -418,7 +417,6 @@ export class AuthService {
         throw ApiError.otpInvalid();
       }
 
-      // OTP verified - generate access token for password reset
       const accessToken = generateAccessToken({ userId: user._id.toString(), role: user.role, isVerified: user.isVerified });
       const refreshToken = generateRefreshToken({ userId: user._id.toString(), role: user.role, isVerified: user.isVerified });
       const hashedRefreshToken = hashOTP(refreshToken);
@@ -433,7 +431,6 @@ export class AuthService {
       };
     }
 
-    // If no OTP provided, send recovery OTP (forgot password flow)
     const newOtp = generateOTP();
     const hashedOtp = hashOTP(newOtp);
     const otpExpiresAt = getOTPExpiry();
@@ -451,7 +448,7 @@ export class AuthService {
     };
   }
 
-  // ============ VERIFY EMAIL WITH TOKEN ============
+  // VERIFY EMAIL WITH TOKEN
   async verifyEmailWithToken(userId: string, otp: string): Promise<{ message: string; user: any }> {
     const user = await User.findById(userId).select('+otp +otpExpiresAt +otpAttempts');
 
@@ -503,7 +500,7 @@ export class AuthService {
     };
   }
 
-  // ============ LOGOUT ============
+  // LOGOUT
   async logout(userId: string, refreshToken: string): Promise<{ message: string }> {
     if (!refreshToken) {
       throw ApiError.validationError('Refresh token is required');
@@ -515,19 +512,16 @@ export class AuthService {
       throw ApiError.userNotFound();
     }
 
-    // Check if user has a refresh token
     if (!user.refreshToken) {
       throw ApiError.validationError('No active session found');
     }
 
-    // Verify the refresh token matches the stored one
     const isValid = await bcrypt.compare(refreshToken, user.refreshToken);
 
     if (!isValid) {
       throw ApiError.unauthorized('Invalid refresh token');
     }
 
-    // Invalidate the refresh token
     user.refreshToken = undefined;
     await user.save();
 
@@ -536,11 +530,10 @@ export class AuthService {
     };
   }
 
-  // ============ GOOGLE AUTH ============
+  // GOOGLE AUTH
   async googleAuth(idToken: string): Promise<{ message: string; isNewUser: boolean; user: any; session: TokenPair }> {
     const googleUser = await verifyGoogleToken(idToken);
 
-    // Find by googleId first, then by email (account linking)
     let user = await User.findOne({
       $or: [{ googleId: googleUser.googleId }, { email: googleUser.email }],
     });
@@ -548,7 +541,6 @@ export class AuthService {
     const isNewUser = !user;
 
     if (user) {
-      // Link Google account if signed up via email before
       const needsUpdate = !user.googleId || !user.isVerified;
       if (needsUpdate) {
         user.googleId    = user.googleId    || googleUser.googleId;
@@ -595,13 +587,12 @@ export class AuthService {
     };
   }
 
-  // ============ REFRESH ACCESS TOKEN ============
+  // REFRESH ACCESS TOKEN
   async refreshAccessToken(refreshToken: string): Promise<{ accessToken: string; refreshToken?: string }> {
     if (!refreshToken) {
       throw ApiError.validationError('Refresh token is required');
     }
 
-    // Verify refresh token JWT
     let decoded: JWTPayload;
     try {
       decoded = verifyToken(refreshToken);
@@ -609,7 +600,6 @@ export class AuthService {
       throw ApiError.unauthorized('Invalid or expired refresh token');
     }
 
-    // Find user and verify stored refresh token
     const user = await User.findById(decoded.userId).select('+refreshToken');
 
     if (!user) {
@@ -620,17 +610,14 @@ export class AuthService {
       throw ApiError.unauthorized('No active session found');
     }
 
-    // Compare refresh token with stored hash
     const isValid = await bcrypt.compare(refreshToken, user.refreshToken);
 
     if (!isValid) {
-      // Possible token theft - invalidate all sessions
       user.refreshToken = undefined;
       await user.save();
       throw ApiError.unauthorized('Token reuse detected. Please login again.');
     }
 
-    // Generate new access token
     const payload: JWTPayload = {
       userId: user._id.toString(),
       role: user.role,
