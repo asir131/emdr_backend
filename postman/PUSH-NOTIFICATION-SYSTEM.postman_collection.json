@@ -1,160 +1,737 @@
 {
-  "info": {
-    "name": "MY-EMDR Push Notification System",
-    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
-  },
-  "variable": [
-    { "key": "baseUrl",   "value": "http://localhost:5005/api" },
-    { "key": "authToken", "value": "YOUR_JWT_TOKEN_HERE" }
-  ],
-  "item": [
-    {
-      "name": "Device Token",
-      "item": [
-        {
-          "name": "Register FCM Token",
-          "request": {
-            "method": "POST",
-            "header": [
-              { "key": "Content-Type",  "value": "application/json" },
-              { "key": "Authorization", "value": "Bearer {{authToken}}" }
-            ],
-            "url": { "raw": "{{baseUrl}}/notifications/token", "host": ["{{baseUrl}}"], "path": ["notifications","token"] },
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"fcmToken\": \"eXaMpLeToKeN_device_token_here_123456789\",\n  \"platform\": \"android\"\n}"
-            }
-          }
-        },
-        {
-          "name": "Remove FCM Token (Logout)",
-          "request": {
-            "method": "DELETE",
-            "header": [
-              { "key": "Authorization", "value": "Bearer {{authToken}}" }
-            ],
-            "url": { "raw": "{{baseUrl}}/notifications/token", "host": ["{{baseUrl}}"], "path": ["notifications","token"] }
-          }
-        }
-      ]
-    },
-    {
-      "name": "My Notifications",
-      "item": [
-        {
-          "name": "Get My Notifications",
-          "request": {
-            "method": "GET",
-            "header": [
-              { "key": "Authorization", "value": "Bearer {{authToken}}" }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/notifications?page=1&limit=20",
-              "host": ["{{baseUrl}}"],
-              "path": ["notifications"],
-              "query": [
-                { "key": "page",  "value": "1" },
-                { "key": "limit", "value": "20" }
-              ]
-            }
-          }
-        },
-        {
-          "name": "Mark Single Notification as Read",
-          "request": {
-            "method": "PATCH",
-            "header": [
-              { "key": "Authorization", "value": "Bearer {{authToken}}" }
-            ],
-            "url": { "raw": "{{baseUrl}}/notifications/NOTIFICATION_ID_HERE/read", "host": ["{{baseUrl}}"], "path": ["notifications","NOTIFICATION_ID_HERE","read"] }
-          }
-        },
-        {
-          "name": "Mark All Notifications as Read",
-          "request": {
-            "method": "PATCH",
-            "header": [
-              { "key": "Authorization", "value": "Bearer {{authToken}}" }
-            ],
-            "url": { "raw": "{{baseUrl}}/notifications/read-all", "host": ["{{baseUrl}}"], "path": ["notifications","read-all"] }
-          }
-        },
-        {
-          "name": "Delete Notification",
-          "request": {
-            "method": "DELETE",
-            "header": [
-              { "key": "Authorization", "value": "Bearer {{authToken}}" }
-            ],
-            "url": { "raw": "{{baseUrl}}/notifications/NOTIFICATION_ID_HERE", "host": ["{{baseUrl}}"], "path": ["notifications","NOTIFICATION_ID_HERE"] }
-          }
-        }
-      ]
-    },
-    {
-      "name": "Admin — Send Notifications",
-      "item": [
-        {
-          "name": "Send to Specific User",
-          "request": {
-            "method": "POST",
-            "header": [
-              { "key": "Content-Type",  "value": "application/json" },
-              { "key": "Authorization", "value": "Bearer {{authToken}}" }
-            ],
-            "url": { "raw": "{{baseUrl}}/notifications/send/user", "host": ["{{baseUrl}}"], "path": ["notifications","send","user"] },
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"userId\": \"USER_OBJECT_ID_HERE\",\n  \"title\": \"Session Reminder\",\n  \"body\": \"Your EMDR session starts in 15 minutes.\",\n  \"data\": {\n    \"type\": \"session_reminder\",\n    \"sessionId\": \"abc123\"\n  }\n}"
-            }
-          }
-        },
-        {
-          "name": "Broadcast to All Users",
-          "request": {
-            "method": "POST",
-            "header": [
-              { "key": "Content-Type",  "value": "application/json" },
-              { "key": "Authorization", "value": "Bearer {{authToken}}" }
-            ],
-            "url": { "raw": "{{baseUrl}}/notifications/send/broadcast", "host": ["{{baseUrl}}"], "path": ["notifications","send","broadcast"] },
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"title\": \"New Feature Available!\",\n  \"body\": \"Check out the latest updates in MY EMDR.\",\n  \"data\": {\n    \"type\": \"announcement\"\n  }\n}"
-            }
-          }
-        },
-        {
-          "name": "Broadcast to Admins Only",
-          "request": {
-            "method": "POST",
-            "header": [
-              { "key": "Content-Type",  "value": "application/json" },
-              { "key": "Authorization", "value": "Bearer {{authToken}}" }
-            ],
-            "url": { "raw": "{{baseUrl}}/notifications/send/broadcast", "host": ["{{baseUrl}}"], "path": ["notifications","send","broadcast"] },
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"title\": \"Admin Alert\",\n  \"body\": \"New user registration spike detected.\",\n  \"role\": \"admin\",\n  \"data\": {\n    \"type\": \"admin_alert\"\n  }\n}"
-            }
-          }
-        },
-        {
-          "name": "Send to Topic",
-          "request": {
-            "method": "POST",
-            "header": [
-              { "key": "Content-Type",  "value": "application/json" },
-              { "key": "Authorization", "value": "Bearer {{authToken}}" }
-            ],
-            "url": { "raw": "{{baseUrl}}/notifications/send/topic", "host": ["{{baseUrl}}"], "path": ["notifications","send","topic"] },
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"topic\": \"general\",\n  \"title\": \"Weekly Wellness Tip\",\n  \"body\": \"Take 5 minutes today for mindful breathing.\",\n  \"data\": {\n    \"type\": \"wellness_tip\"\n  }\n}"
-            }
-          }
-        }
-      ]
-    }
-  ]
+	"info": {
+		"_postman_id": "notification-system-v2",
+		"name": "Notification System — Full Test",
+		"description": "Notification system এর সব endpoint এর complete test। Login → Register Token → Get → Mark Read → Delete → Admin Send → Edge Cases।",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "STEP 1 — Login (Get Token)",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"const res = pm.response.json();",
+							"if (pm.response.code === 200 && res.data?.session) {",
+							"    pm.collectionVariables.set('accessToken', res.data.session.accessToken);",
+							"    pm.collectionVariables.set('refreshToken', res.data.session.refreshToken);",
+							"    pm.collectionVariables.set('userId', res.data.user.id);",
+							"    console.log('✅ Login OK — token saved');",
+							"    pm.test('Login successful', () => {",
+							"        pm.expect(res.success).to.be.true;",
+							"        pm.expect(res.data.session.accessToken).to.exist;",
+							"    });",
+							"} else {",
+							"    console.log('❌ Login failed:', res);",
+							"}"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [{ "key": "Content-Type", "value": "application/json" }],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"email\": \"rakib@example.com\",\n  \"password\": \"Test@1234\"\n}"
+				},
+				"url": {
+					"raw": "{{baseUrl}}/api/auth/login",
+					"host": ["{{baseUrl}}"],
+					"path": ["api", "auth", "login"]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "STEP 2 — Register FCM Token (Android)",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"const res = pm.response.json();",
+							"pm.test('FCM token registered', () => {",
+							"    pm.expect(pm.response.code).to.equal(200);",
+							"    pm.expect(res.data.message).to.equal('FCM token registered');",
+							"    pm.expect(res.data.user.fcmToken).to.exist;",
+							"    console.log('✅ FCM token registered for:', res.data.user.firstName);",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [{ "key": "token", "value": "{{accessToken}}", "type": "string" }]
+				},
+				"method": "POST",
+				"header": [{ "key": "Content-Type", "value": "application/json" }],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"fcmToken\": \"dGVzdF9mY21fdG9rZW5fYW5kcm9pZF8xMjM0NTY3ODk\",\n  \"platform\": \"android\"\n}"
+				},
+				"url": {
+					"raw": "{{baseUrl}}/api/notifications/token",
+					"host": ["{{baseUrl}}"],
+					"path": ["api", "notifications", "token"]
+				},
+				"description": "Android device এর FCM token register করুন।"
+			},
+			"response": []
+		},
+		{
+			"name": "STEP 2b — Register FCM Token (iOS)",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test('iOS FCM token registered', () => {",
+							"    pm.expect(pm.response.code).to.equal(200);",
+							"    console.log('✅ iOS token registered');",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [{ "key": "token", "value": "{{accessToken}}", "type": "string" }]
+				},
+				"method": "POST",
+				"header": [{ "key": "Content-Type", "value": "application/json" }],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"fcmToken\": \"dGVzdF9mY21fdG9rZW5faW9zXzk4NzY1NDMyMQ\",\n  \"platform\": \"ios\"\n}"
+				},
+				"url": {
+					"raw": "{{baseUrl}}/api/notifications/token",
+					"host": ["{{baseUrl}}"],
+					"path": ["api", "notifications", "token"]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "STEP 3 — Get My Notifications (Empty)",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"const res = pm.response.json();",
+							"pm.test('Get notifications successful', () => {",
+							"    pm.expect(pm.response.code).to.equal(200);",
+							"    pm.expect(res.data).to.have.property('notifications');",
+							"    pm.expect(res.data).to.have.property('total');",
+							"    pm.expect(res.data).to.have.property('unreadCount');",
+							"    pm.expect(res.data).to.have.property('totalPages');",
+							"    pm.expect(res.data).to.have.property('hasNextPage');",
+							"    pm.expect(res.data.notifications).to.be.an('array');",
+							"    console.log('✅ Notifications:', res.data.total, '| Unread:', res.data.unreadCount);",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [{ "key": "token", "value": "{{accessToken}}", "type": "string" }]
+				},
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{baseUrl}}/api/notifications?page=1&limit=20",
+					"host": ["{{baseUrl}}"],
+					"path": ["api", "notifications"],
+					"query": [
+						{ "key": "page", "value": "1" },
+						{ "key": "limit", "value": "20" }
+					]
+				},
+				"description": "Logged-in user এর সব notifications নিন।"
+			},
+			"response": []
+		},
+		{
+			"name": "STEP 3b — Get Notifications (Pagination Test)",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"const res = pm.response.json();",
+							"pm.test('Pagination works', () => {",
+							"    pm.expect(pm.response.code).to.equal(200);",
+							"    pm.expect(res.data.page).to.equal(2);",
+							"    pm.expect(res.data.limit).to.equal(5);",
+							"    console.log('✅ Page 2, limit 5 — OK');",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [{ "key": "token", "value": "{{accessToken}}", "type": "string" }]
+				},
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{baseUrl}}/api/notifications?page=2&limit=5",
+					"host": ["{{baseUrl}}"],
+					"path": ["api", "notifications"],
+					"query": [
+						{ "key": "page", "value": "2" },
+						{ "key": "limit", "value": "5" }
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "STEP 4 — Mark All as Read",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"const res = pm.response.json();",
+							"pm.test('Mark all read successful', () => {",
+							"    pm.expect(pm.response.code).to.equal(200);",
+							"    pm.expect(res.data).to.have.property('updated');",
+							"    console.log('✅ Marked as read:', res.data.updated, 'notifications');",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [{ "key": "token", "value": "{{accessToken}}", "type": "string" }]
+				},
+				"method": "PATCH",
+				"header": [],
+				"url": {
+					"raw": "{{baseUrl}}/api/notifications/read-all",
+					"host": ["{{baseUrl}}"],
+					"path": ["api", "notifications", "read-all"]
+				},
+				"description": "সব unread notifications একসাথে read করুন।"
+			},
+			"response": []
+		},
+		{
+			"name": "STEP 5 — Mark Single as Read",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"const res = pm.response.json();",
+							"pm.test('Mark single read successful', () => {",
+							"    pm.expect(pm.response.code).to.equal(200);",
+							"    pm.expect(res.data).to.have.property('updated');",
+							"    console.log('✅ Single notification marked read');",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [{ "key": "token", "value": "{{accessToken}}", "type": "string" }]
+				},
+				"method": "PATCH",
+				"header": [],
+				"url": {
+					"raw": "{{baseUrl}}/api/notifications/{{notificationId}}/read",
+					"host": ["{{baseUrl}}"],
+					"path": ["api", "notifications", "{{notificationId}}", "read"]
+				},
+				"description": "⚠️ notificationId variable এ একটা real MongoDB ObjectId দিন।"
+			},
+			"response": []
+		},
+		{
+			"name": "STEP 6 — Delete Notification",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"const res = pm.response.json();",
+							"pm.test('Notification deleted', () => {",
+							"    pm.expect(pm.response.code).to.equal(200);",
+							"    pm.expect(res.data.message).to.equal('Notification deleted');",
+							"    console.log('✅ Notification deleted');",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [{ "key": "token", "value": "{{accessToken}}", "type": "string" }]
+				},
+				"method": "DELETE",
+				"header": [],
+				"url": {
+					"raw": "{{baseUrl}}/api/notifications/{{notificationId}}",
+					"host": ["{{baseUrl}}"],
+					"path": ["api", "notifications", "{{notificationId}}"]
+				},
+				"description": "⚠️ notificationId variable এ একটা real MongoDB ObjectId দিন।"
+			},
+			"response": []
+		},
+		{
+			"name": "STEP 7 — Remove FCM Token",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test('FCM token removed', () => {",
+							"    pm.expect(pm.response.code).to.equal(200);",
+							"    pm.expect(pm.response.json().data.message).to.equal('FCM token removed');",
+							"    console.log('✅ FCM token removed');",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [{ "key": "token", "value": "{{accessToken}}", "type": "string" }]
+				},
+				"method": "DELETE",
+				"header": [],
+				"url": {
+					"raw": "{{baseUrl}}/api/notifications/token",
+					"host": ["{{baseUrl}}"],
+					"path": ["api", "notifications", "token"]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "── ADMIN TESTS ──────────────────",
+			"item": [
+				{
+					"name": "Admin Login",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"const res = pm.response.json();",
+									"if (pm.response.code === 200 && res.data?.session) {",
+									"    pm.collectionVariables.set('adminToken', res.data.session.accessToken);",
+									"    console.log('✅ Admin login OK');",
+									"    pm.test('Admin login successful', () => pm.expect(res.success).to.be.true);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [{ "key": "Content-Type", "value": "application/json" }],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"email\": \"admin@example.com\",\n  \"password\": \"Admin@1234\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/auth/login",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "auth", "login"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Send to Specific User",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"const res = pm.response.json();",
+									"pm.test('Send to user — response OK', () => {",
+									"    pm.expect([200, 400]).to.include(pm.response.code);",
+									"    if (pm.response.code === 200) {",
+									"        console.log('✅ Notification sent to user');",
+									"    } else {",
+									"        console.log('⚠️ Expected if no FCM token:', res.error?.message);",
+									"    }",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [{ "key": "token", "value": "{{adminToken}}", "type": "string" }]
+						},
+						"method": "POST",
+						"header": [{ "key": "Content-Type", "value": "application/json" }],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"userId\": \"{{userId}}\",\n  \"title\": \"Session Reminder\",\n  \"body\": \"Your EMDR session starts in 15 minutes.\",\n  \"data\": {\n    \"type\": \"session_reminder\",\n    \"sessionId\": \"abc123\"\n  }\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/notifications/send/user",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "notifications", "send", "user"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Broadcast to All Users",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"const res = pm.response.json();",
+									"pm.test('Broadcast queued', () => {",
+									"    pm.expect(pm.response.code).to.equal(200);",
+									"    pm.expect(res.data).to.have.property('queued');",
+									"    console.log('✅ Broadcast queued for', res.data.queued, 'users');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [{ "key": "token", "value": "{{adminToken}}", "type": "string" }]
+						},
+						"method": "POST",
+						"header": [{ "key": "Content-Type", "value": "application/json" }],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"title\": \"New Feature Available!\",\n  \"body\": \"Check out the latest updates in MY EMDR.\",\n  \"data\": {\n    \"type\": \"announcement\"\n  }\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/notifications/send/broadcast",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "notifications", "send", "broadcast"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Broadcast to Users Only (role filter)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"const res = pm.response.json();",
+									"pm.test('Role-filtered broadcast queued', () => {",
+									"    pm.expect(pm.response.code).to.equal(200);",
+									"    console.log('✅ User-only broadcast queued:', res.data.queued);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [{ "key": "token", "value": "{{adminToken}}", "type": "string" }]
+						},
+						"method": "POST",
+						"header": [{ "key": "Content-Type", "value": "application/json" }],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"title\": \"User Update\",\n  \"body\": \"Important update for all users.\",\n  \"role\": \"user\",\n  \"data\": { \"type\": \"user_update\" }\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/notifications/send/broadcast",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "notifications", "send", "broadcast"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Send to Topic",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"const res = pm.response.json();",
+									"pm.test('Topic notification sent', () => {",
+									"    pm.expect(pm.response.code).to.equal(200);",
+									"    console.log('✅ Topic notification sent');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [{ "key": "token", "value": "{{adminToken}}", "type": "string" }]
+						},
+						"method": "POST",
+						"header": [{ "key": "Content-Type", "value": "application/json" }],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"topic\": \"general\",\n  \"title\": \"Weekly Wellness Tip\",\n  \"body\": \"Take 5 minutes today for mindful breathing.\",\n  \"data\": { \"type\": \"wellness_tip\" }\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/notifications/send/topic",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "notifications", "send", "topic"]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "── EDGE CASE TESTS ──────────────",
+			"item": [
+				{
+					"name": "❌ No Token (401)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Blocked without token', () => {",
+									"    pm.expect(pm.response.code).to.equal(401);",
+									"    console.log('✅ Correctly blocked — no token');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/notifications",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "notifications"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "❌ Invalid FCM Platform (400)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Invalid platform rejected', () => {",
+									"    pm.expect(pm.response.code).to.equal(400);",
+									"    console.log('✅ Correctly rejected invalid platform');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [{ "key": "token", "value": "{{accessToken}}", "type": "string" }]
+						},
+						"method": "POST",
+						"header": [{ "key": "Content-Type", "value": "application/json" }],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"fcmToken\": \"sometoken123\",\n  \"platform\": \"windows\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/notifications/token",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "notifications", "token"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "❌ User tries Admin route (403)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Non-admin blocked from admin route', () => {",
+									"    pm.expect(pm.response.code).to.equal(403);",
+									"    console.log('✅ Correctly blocked — not admin');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [{ "key": "token", "value": "{{accessToken}}", "type": "string" }]
+						},
+						"method": "POST",
+						"header": [{ "key": "Content-Type", "value": "application/json" }],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"title\": \"Hack attempt\",\n  \"body\": \"Should be blocked\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/notifications/send/broadcast",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "notifications", "send", "broadcast"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "❌ Invalid userId format (400)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Invalid userId rejected', () => {",
+									"    pm.expect(pm.response.code).to.equal(400);",
+									"    console.log('✅ Correctly rejected invalid userId format');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [{ "key": "token", "value": "{{adminToken}}", "type": "string" }]
+						},
+						"method": "POST",
+						"header": [{ "key": "Content-Type", "value": "application/json" }],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"userId\": \"not-a-valid-id\",\n  \"title\": \"Test\",\n  \"body\": \"Test body\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/notifications/send/user",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "notifications", "send", "user"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "❌ Delete Non-existent Notification (404)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Non-existent notification returns 404', () => {",
+									"    pm.expect(pm.response.code).to.equal(404);",
+									"    console.log('✅ Correctly returned 404');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [{ "key": "token", "value": "{{accessToken}}", "type": "string" }]
+						},
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/notifications/000000000000000000000000",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "notifications", "000000000000000000000000"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "❌ Limit over 50 — capped (400)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Limit over 50 rejected', () => {",
+									"    pm.expect(pm.response.code).to.equal(400);",
+									"    console.log('✅ Correctly rejected limit > 50');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [{ "key": "token", "value": "{{accessToken}}", "type": "string" }]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/notifications?page=1&limit=999",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "notifications"],
+							"query": [
+								{ "key": "page", "value": "1" },
+								{ "key": "limit", "value": "999" }
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		}
+	],
+	"variable": [
+		{ "key": "baseUrl",        "value": "http://localhost:5005", "type": "string" },
+		{ "key": "accessToken",    "value": "", "type": "string" },
+		{ "key": "refreshToken",   "value": "", "type": "string" },
+		{ "key": "adminToken",     "value": "", "type": "string" },
+		{ "key": "userId",         "value": "", "type": "string" },
+		{ "key": "notificationId", "value": "REPLACE_WITH_REAL_NOTIFICATION_ID", "type": "string" }
+	]
 }

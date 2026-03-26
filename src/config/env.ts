@@ -24,6 +24,8 @@ const envSchema = z.object({
   FIREBASE_PRIVATE_KEY: z.string().optional(),
 
   GOOGLE_CLIENT_ID: z.string().optional(),
+  REDIS_URL: z.string().default('redis://localhost:6379'),
+  ALLOWED_ORIGINS: z.string().default('*'),
 });
 
 const parsed = envSchema.safeParse(process.env);

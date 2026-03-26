@@ -26,7 +26,7 @@ export const notificationController = {
     try {
       const { userId, ...payload } = req.body;
       const data = await svc.sendToUser(userId, payload);
-      sendSuccess(res, { message: 'Notification sent', ...data });
+      sendSuccess(res, { message: 'Notification sent', fcmResult: data.fcmResult, notification: data.notification });
     } catch (e) { next(e); }
   },
 
@@ -34,7 +34,7 @@ export const notificationController = {
     try {
       const { role, ...payload } = req.body;
       const data = await svc.broadcast(payload, role);
-      sendSuccess(res, { message: 'Broadcast sent', ...data });
+      sendSuccess(res, data);
     } catch (e) { next(e); }
   },
 
@@ -48,8 +48,9 @@ export const notificationController = {
 
   getMyNotifications: async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
-      const { page = 1, limit = 20 } = req.query as { page?: number; limit?: number };
-      const data = await svc.getMyNotifications(req.user!.userId, +page, +limit);
+      const page  = Math.max(1, parseInt(String(req.query.page  ?? '1'),  10) || 1);
+      const limit = Math.min(50, Math.max(1, parseInt(String(req.query.limit ?? '20'), 10) || 20));
+      const data = await svc.getMyNotifications(req.user!.userId, page, limit);
       sendSuccess(res, data);
     } catch (e) { next(e); }
   },

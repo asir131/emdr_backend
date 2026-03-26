@@ -1,16 +1,31 @@
 import { User } from '../auth/auth.model';
 import { ApiError } from '../../utils/ApiError';
+import { redis, CACHE_TTL } from '../../config/redis';
+import { logger } from '../../config/logger';
+
+const profileCacheKey = (userId: string) => `profile:${userId}`;
 
 export class ProfileService {
-  // GET profile
+
+  // GET profile — Redis cached
   async getProfile(userId: string) {
+    const cacheKey = profileCacheKey(userId);
+
+    // Try cache first
+    try {
+      const cached = await redis.get(cacheKey);
+      if (cached) return JSON.parse(cached);
+    } catch (err) {
+      logger.warn('Redis cache read failed, falling back to DB', { userId });
+    }
+
     const user = await User.findOne({ _id: userId, isDeleted: false }).select(
       'firstName lastName email phoneNumber avatar isVerified isProfileCompleted authProvider role createdAt'
-    );
+    ).lean();
 
     if (!user) throw ApiError.userNotFound();
 
-    return {
+    const profile = {
       id: user._id.toString(),
       fullName: `${user.firstName} ${user.lastName}`.trim(),
       email: user.email,
@@ -22,9 +37,18 @@ export class ProfileService {
       role: user.role,
       memberSince: user.createdAt,
     };
+
+    // Cache the result
+    try {
+      await redis.setex(cacheKey, CACHE_TTL.PROFILE, JSON.stringify(profile));
+    } catch (err) {
+      logger.warn('Redis cache write failed', { userId });
+    }
+
+    return profile;
   }
 
-  // EDIT profile — fullName + optional phoneNumber
+  // EDIT profile — invalidate cache after update
   async updateProfile(userId: string, fullName: string, phoneNumber?: string) {
     const parts = fullName.trim().split(/\s+/);
     const firstName = parts[0];
@@ -35,20 +59,17 @@ export class ProfileService {
       lastName,
       isProfileCompleted: true,
     };
-
-    if (phoneNumber !== undefined) {
-      updateData.phoneNumber = phoneNumber;
-    }
+    if (phoneNumber !== undefined) updateData.phoneNumber = phoneNumber;
 
     const user = await User.findOneAndUpdate(
       { _id: userId, isDeleted: false },
       updateData,
       { new: true, runValidators: true }
-    ).select('firstName lastName email phoneNumber avatar isVerified isProfileCompleted');
+    ).select('firstName lastName email phoneNumber avatar isVerified isProfileCompleted').lean();
 
     if (!user) throw ApiError.userNotFound();
 
-    return {
+    const profile = {
       id: user._id.toString(),
       fullName: `${user.firstName} ${user.lastName}`.trim(),
       email: user.email,
@@ -57,21 +78,40 @@ export class ProfileService {
       isVerified: user.isVerified,
       isProfileCompleted: user.isProfileCompleted,
     };
+
+    // Invalidate cache
+    try {
+      await redis.del(profileCacheKey(userId));
+    } catch (err) {
+      logger.warn('Redis cache invalidation failed', { userId });
+    }
+
+    return profile;
   }
 
-  // SOFT DELETE account
+  // SOFT DELETE — clear cache + session + FCM
   async deleteAccount(userId: string) {
     const user = await User.findOneAndUpdate(
       { _id: userId, isDeleted: false },
       {
         isDeleted: true,
         deletedAt: new Date(),
-        refreshToken: undefined,   // invalidate session immediately
+        refreshToken: undefined,
+        fcmToken: undefined,
+        fcmPlatform: undefined,
       },
       { new: true }
     );
 
     if (!user) throw ApiError.userNotFound();
+
+    // Clear all caches for this user
+    try {
+      await redis.del(profileCacheKey(userId));
+      await redis.del(`auth:check:${userId}`);
+    } catch (err) {
+      logger.warn('Redis cache clear failed on delete', { userId });
+    }
 
     return { message: 'Account deleted successfully' };
   }

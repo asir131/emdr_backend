@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import { ZodError } from 'zod';
 import { ApiError } from '../utils/ApiError';
+import { logger } from '../config/logger';
 import mongoose from 'mongoose';
 
 export const errorHandler = (
@@ -11,11 +12,7 @@ export const errorHandler = (
 ): void => {
 
   if (process.env.NODE_ENV === 'development') {
-    console.error('Error:', {
-      name: err.name,
-      message: err.message,
-      stack: err.stack,
-    });
+    logger.debug('Error caught', { name: err.name, message: err.message, stack: err.stack });
   }
 
 
@@ -136,7 +133,7 @@ export const errorHandler = (
   }
 
 
-  console.error('💥 Unexpected Error:', err);
+  logger.error('Unexpected error', { name: err.name, message: err.message, stack: err.stack });
   
   res.status(500).json({
     success: false,

@@ -9,7 +9,7 @@ export const registerTokenSchema = z.object({
 
 export const sendToUserSchema = z.object({
   body: z.object({
-    userId:   z.string().min(1),
+    userId:   z.string().regex(/^[a-f\d]{24}$/i, 'Invalid user ID format'),
     title:    z.string().min(1).max(100),
     body:     z.string().min(1).max(500),
     data:     z.record(z.string()).optional(),
@@ -46,6 +46,12 @@ export const paginationSchema = z.object({
 
 export const markReadSchema = z.object({
   params: z.object({
-    id: z.string().optional(),
+    id: z.string().min(1, 'Notification ID is required'),
+  }),
+});
+
+export const deleteNotificationSchema = z.object({
+  params: z.object({
+    id: z.string().min(1, 'Notification ID is required'),
   }),
 });
