@@ -1,0 +1,197 @@
+{
+	"info": {
+		"_postman_id": "admin-profile-001",
+		"name": "Admin Profile — Get & Edit",
+		"description": "Admin Personal Information — GET profile and PATCH (name, phoneNumber, profilePic).",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "── SETUP ────────────────────────────",
+			"item": [
+				{
+					"name": "0. Admin Login",
+					"event": [{"listen": "test","script": {"exec": ["const r = pm.response.json();","if (pm.response.code === 200) {","    pm.collectionVariables.set('adminToken', r.data.session.accessToken);","    console.log('✅ Admin token saved');","    console.log('Role:', r.data.user.role);","    pm.test('Admin login OK', () => {","        pm.expect(r.success).to.be.true;","        pm.expect(r.data.user.role).to.equal('admin');","    });","}"],"type": "text/javascript"}}],
+					"request": {
+						"method": "POST",
+						"header": [{"key": "Content-Type","value": "application/json"}],
+						"body": {"mode": "raw","raw": "{\n  \"email\": \"admin@myemdr.com\",\n  \"password\": \"Admin@123456\"\n}"},
+						"url": {"raw": "{{baseUrl}}/api/auth/login","host": ["{{baseUrl}}"],"path": ["api","auth","login"]}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "── MAIN FLOW ────────────────────────",
+			"item": [
+				{
+					"name": "1. GET Admin Profile",
+					"event": [{"listen": "test","script": {"exec": ["const r = pm.response.json();","pm.test('Admin profile returned', () => {","    pm.expect(pm.response.code).to.equal(200);","    pm.expect(r.success).to.be.true;","    pm.expect(r.data.name).to.exist;","    pm.expect(r.data.email).to.exist;","    pm.expect(r.data.role).to.equal('admin');","    console.log('✅ Admin profile fetched');","    console.log('👤 Name:', r.data.name);","    console.log('📧 Email:', r.data.email);","    console.log('📞 Phone:', r.data.phoneNumber);","    console.log('🖼️  ProfilePic:', r.data.profilePic);","    console.log('📅 Member since:', r.data.memberSince);","});"],"type": "text/javascript"}}],
+					"request": {
+						"auth": {"type": "bearer","bearer": [{"key": "token","value": "{{adminToken}}","type": "string"}]},
+						"method": "GET",
+						"header": [],
+						"url": {"raw": "{{baseUrl}}/api/admin/profile","host": ["{{baseUrl}}"],"path": ["api","admin","profile"]},
+						"description": "Get admin's own profile — name, email, phoneNumber, profilePic, role, memberSince."
+					},
+					"response": []
+				},
+				{
+					"name": "2. PATCH — Update Name & Phone",
+					"event": [{"listen": "test","script": {"exec": ["const r = pm.response.json();","pm.test('Profile updated (name + phone)', () => {","    pm.expect(pm.response.code).to.equal(200);","    pm.expect(r.success).to.be.true;","    pm.expect(r.data.name).to.equal('Tamim Ahmed');","    pm.expect(r.data.phoneNumber).to.exist;","    console.log('✅ Name and phone updated');","    console.log('👤 New name:', r.data.name);","    console.log('📞 New phone:', r.data.phoneNumber);","});"],"type": "text/javascript"}}],
+					"request": {
+						"auth": {"type": "bearer","bearer": [{"key": "token","value": "{{adminToken}}","type": "string"}]},
+						"method": "PATCH",
+						"header": [],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{"key": "name","value": "Tamim Ahmed","type": "text"},
+								{"key": "phoneNumber","value": "+8801712345678","type": "text"}
+							]
+						},
+						"url": {"raw": "{{baseUrl}}/api/admin/profile","host": ["{{baseUrl}}"],"path": ["api","admin","profile"]},
+						"description": "Update name and phone number only — no image."
+					},
+					"response": []
+				},
+				{
+					"name": "3. PATCH — Update with Profile Picture",
+					"event": [{"listen": "test","script": {"exec": ["const r = pm.response.json();","pm.test('Profile updated with picture', () => {","    pm.expect(pm.response.code).to.equal(200);","    pm.expect(r.success).to.be.true;","    pm.expect(r.data.profilePic).to.exist;","    pm.expect(r.data.profilePic).to.include('cloudinary');","    console.log('✅ Profile picture uploaded to Cloudinary');","    console.log('🖼️  URL:', r.data.profilePic);","});"],"type": "text/javascript"}}],
+					"request": {
+						"auth": {"type": "bearer","bearer": [{"key": "token","value": "{{adminToken}}","type": "string"}]},
+						"method": "PATCH",
+						"header": [],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{"key": "name","value": "Tamim Ahmed","type": "text"},
+								{"key": "phoneNumber","value": "+8801712345678","type": "text"},
+								{"key": "profilePic","type": "file","src": "","description": "⚠️ Select an image file (JPEG/PNG/WebP, max 5MB)"}
+							]
+						},
+						"url": {"raw": "{{baseUrl}}/api/admin/profile","host": ["{{baseUrl}}"],"path": ["api","admin","profile"]},
+						"description": "⚠️ Select a real image file in the profilePic field. Uploads to Cloudinary, old image auto-deleted."
+					},
+					"response": []
+				},
+				{
+					"name": "4. PATCH — Update Name Only (No Phone, No Pic)",
+					"event": [{"listen": "test","script": {"exec": ["const r = pm.response.json();","pm.test('Name-only update works', () => {","    pm.expect(pm.response.code).to.equal(200);","    pm.expect(r.data.name).to.equal('Super Admin');","    console.log('✅ Name-only update OK');","});"],"type": "text/javascript"}}],
+					"request": {
+						"auth": {"type": "bearer","bearer": [{"key": "token","value": "{{adminToken}}","type": "string"}]},
+						"method": "PATCH",
+						"header": [],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{"key": "name","value": "Super Admin","type": "text"}
+							]
+						},
+						"url": {"raw": "{{baseUrl}}/api/admin/profile","host": ["{{baseUrl}}"],"path": ["api","admin","profile"]},
+						"description": "Only name is required. phoneNumber and profilePic are optional."
+					},
+					"response": []
+				},
+				{
+					"name": "5. GET Profile (Verify Changes)",
+					"event": [{"listen": "test","script": {"exec": ["const r = pm.response.json();","pm.test('Changes verified', () => {","    pm.expect(pm.response.code).to.equal(200);","    console.log('✅ Final profile state:');","    console.log('  Name:', r.data.name);","    console.log('  Email:', r.data.email);","    console.log('  Phone:', r.data.phoneNumber);","    console.log('  ProfilePic:', r.data.profilePic);","});"],"type": "text/javascript"}}],
+					"request": {
+						"auth": {"type": "bearer","bearer": [{"key": "token","value": "{{adminToken}}","type": "string"}]},
+						"method": "GET",
+						"header": [],
+						"url": {"raw": "{{baseUrl}}/api/admin/profile","host": ["{{baseUrl}}"],"path": ["api","admin","profile"]},
+						"description": "Verify all changes are saved correctly."
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "── EDGE CASES ───────────────────────",
+			"item": [
+				{
+					"name": "❌ No Token (401)",
+					"event": [{"listen": "test","script": {"exec": ["pm.test('Blocked without token', () => {","    pm.expect(pm.response.code).to.equal(401);","    console.log('✅ Correctly blocked — no token');","});"],"type": "text/javascript"}}],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {"raw": "{{baseUrl}}/api/admin/profile","host": ["{{baseUrl}}"],"path": ["api","admin","profile"]}
+					},
+					"response": []
+				},
+				{
+					"name": "❌ Regular User Tries Admin Route (403)",
+					"event": [{"listen": "test","script": {"exec": ["pm.test('Non-admin blocked', () => {","    pm.expect(pm.response.code).to.equal(403);","    console.log('✅ Correctly blocked — not admin');","});"],"type": "text/javascript"}}],
+					"request": {
+						"auth": {"type": "bearer","bearer": [{"key": "token","value": "{{userToken}}","type": "string"}]},
+						"method": "GET",
+						"header": [],
+						"url": {"raw": "{{baseUrl}}/api/admin/profile","host": ["{{baseUrl}}"],"path": ["api","admin","profile"]},
+						"description": "⚠️ Set userToken by logging in as a regular user first."
+					},
+					"response": []
+				},
+				{
+					"name": "❌ Missing Name Field (400)",
+					"event": [{"listen": "test","script": {"exec": ["pm.test('Missing name rejected', () => {","    pm.expect(pm.response.code).to.equal(400);","    console.log('✅ Correctly rejected — name is required');","});"],"type": "text/javascript"}}],
+					"request": {
+						"auth": {"type": "bearer","bearer": [{"key": "token","value": "{{adminToken}}","type": "string"}]},
+						"method": "PATCH",
+						"header": [],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{"key": "phoneNumber","value": "+8801712345678","type": "text"}
+							]
+						},
+						"url": {"raw": "{{baseUrl}}/api/admin/profile","host": ["{{baseUrl}}"],"path": ["api","admin","profile"]}
+					},
+					"response": []
+				},
+				{
+					"name": "❌ Invalid Phone Format (400)",
+					"event": [{"listen": "test","script": {"exec": ["pm.test('Invalid phone rejected', () => {","    pm.expect(pm.response.code).to.equal(400);","    console.log('✅ Correctly rejected — invalid phone format');","});"],"type": "text/javascript"}}],
+					"request": {
+						"auth": {"type": "bearer","bearer": [{"key": "token","value": "{{adminToken}}","type": "string"}]},
+						"method": "PATCH",
+						"header": [],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{"key": "name","value": "Tamim Ahmed","type": "text"},
+								{"key": "phoneNumber","value": "abc123","type": "text"}
+							]
+						},
+						"url": {"raw": "{{baseUrl}}/api/admin/profile","host": ["{{baseUrl}}"],"path": ["api","admin","profile"]}
+					},
+					"response": []
+				},
+				{
+					"name": "❌ Invalid Image Type (400)",
+					"event": [{"listen": "test","script": {"exec": ["pm.test('Invalid file type rejected', () => {","    pm.expect(pm.response.code).to.equal(400);","    console.log('✅ Correctly rejected — only JPEG/PNG/WebP allowed');","});"],"type": "text/javascript"}}],
+					"request": {
+						"auth": {"type": "bearer","bearer": [{"key": "token","value": "{{adminToken}}","type": "string"}]},
+						"method": "PATCH",
+						"header": [],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{"key": "name","value": "Tamim Ahmed","type": "text"},
+								{"key": "profilePic","type": "file","src": "","description": "⚠️ Select a non-image file (e.g. .pdf or .txt) to test rejection"}
+							]
+						},
+						"url": {"raw": "{{baseUrl}}/api/admin/profile","host": ["{{baseUrl}}"],"path": ["api","admin","profile"]}
+					},
+					"response": []
+				}
+			]
+		}
+	],
+	"variable": [
+		{"key": "baseUrl",    "value": "http://localhost:5005", "type": "string"},
+		{"key": "adminToken", "value": "", "type": "string"},
+		{"key": "userToken",  "value": "", "type": "string"}
+	]
+}

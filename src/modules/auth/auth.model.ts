@@ -25,6 +25,8 @@ export interface IUser extends Document {
   avatar?: string;
   isDeleted: boolean;
   deletedAt?: Date;
+  isAcceptPrivacyStatement: boolean;
+  privacyAcceptedAt?: Date;
   fcmToken?: string;
   fcmPlatform?: 'android' | 'ios' | 'web';
   createdAt: Date;
@@ -134,6 +136,8 @@ const userSchema = new Schema<IUser>(
     phoneNumber: { type: String, trim: true },
     isDeleted: { type: Boolean, default: false, index: true },
     deletedAt: { type: Date },
+    isAcceptPrivacyStatement: { type: Boolean, default: false },
+    privacyAcceptedAt: { type: Date },
   },
   {
     timestamps: true,

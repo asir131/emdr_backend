@@ -12,6 +12,7 @@ interface SignupData {
   lastName: string;
   email: string;
   password: string;
+  isAcceptPrivacyStatement: boolean;
 }
 
 interface LoginData {
@@ -29,6 +30,7 @@ interface SignupResponse {
     email: string;
     authProvider: string;
     isProfileCompleted: boolean;
+    isAcceptPrivacyStatement: boolean;
   };
   session: TokenPair;
   _dev_otp?: string;
@@ -41,6 +43,7 @@ interface LoginResponse {
     firstName: string;
     lastName: string;
     email: string;
+    role: string;
     isVerified: boolean;
   };
   session: TokenPair;
@@ -49,7 +52,7 @@ interface LoginResponse {
 export class AuthService {
 
   async signup(data: SignupData): Promise<SignupResponse> {
-    const { firstName, lastName, email, password } = data;
+    const { firstName, lastName, email, password, isAcceptPrivacyStatement } = data;
 
     const existingUser = await User.findOne({ email }).select('+otp +otpExpiresAt +otpAttempts');
 
@@ -73,6 +76,8 @@ export class AuthService {
       authProvider: 'email',
       isVerified: false,
       isProfileCompleted: false,
+      isAcceptPrivacyStatement,
+      privacyAcceptedAt: isAcceptPrivacyStatement ? new Date() : undefined,
       otp: hashedOtp,
       otpExpiresAt,
       otpAttempts: 0,
@@ -106,6 +111,7 @@ export class AuthService {
         email: user.email,
         authProvider: user.authProvider,
         isProfileCompleted: user.isProfileCompleted,
+        isAcceptPrivacyStatement: user.isAcceptPrivacyStatement,
       },
       session: tokens,
     };
@@ -150,6 +156,7 @@ export class AuthService {
         email: user.email,
         authProvider: user.authProvider,
         isProfileCompleted: user.isProfileCompleted,
+        isAcceptPrivacyStatement: user.isAcceptPrivacyStatement,
       },
       session: tokens,
     };
@@ -315,6 +322,7 @@ export class AuthService {
         firstName: user.firstName,
         lastName: user.lastName,
         email: user.email,
+        role: user.role,
         isVerified: user.isVerified,
       },
       session: tokens,

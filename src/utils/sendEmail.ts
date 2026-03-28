@@ -109,7 +109,7 @@ const LOGO_SVG = `<svg width="120" height="130" viewBox="0 0 120 130" xmlns="htt
   <path d="M86 70 Q86 62 82 60" stroke="#2d6a4f" stroke-width="1.4" fill="none" stroke-linecap="round"/>
 </svg>`;
 
-// ─── Premium email wrapper template ──────────────────────────────────────────
+
 const emailTemplate = (title: string, bodyContent: string): string => `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -321,6 +321,92 @@ export const sendOTPEmail = async (
     subject: 'Verify Your Email — MY EMDR',
     text: `Hi ${firstName}, your verification code is: ${otp}. Valid for 10 minutes.`,
     html: emailTemplate('Verify Your Email — MY EMDR', body),
+  });
+};
+
+export const sendPasswordChangedEmail = async (
+  email: string,
+  firstName: string,
+): Promise<void> => {
+  const changedAt = new Date().toLocaleString('en-US', {
+    dateStyle: 'full',
+    timeStyle: 'short',
+  });
+
+  const body = `
+    <h2 style="margin:0 0 8px;color:#1b4332;font-size:22px;font-weight:700;">
+      Password Changed Successfully 🔒
+    </h2>
+    <p style="margin:0 0 24px;color:#4a6b5a;font-size:15px;line-height:1.6;">
+      Hi ${firstName}, your MY EMDR account password was just changed.
+    </p>
+
+    <!-- Info Box -->
+    <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="margin:0 0 28px;">
+      <tr><td align="center">
+        <div style="
+          background:linear-gradient(145deg,#f0faf5,#e4f5ec);
+          border:2px solid #52b788;
+          border-radius:14px;
+          padding:24px;
+          text-align:center;
+        ">
+          <div style="font-size:40px;margin-bottom:10px;">✅</div>
+          <p style="margin:0 0 6px;color:#52796f;font-size:12px;
+                    text-transform:uppercase;letter-spacing:2px;font-weight:600;">
+            Password Updated
+          </p>
+          <p style="margin:0;color:#1b4332;font-size:14px;font-weight:600;">
+            ${changedAt}
+          </p>
+        </div>
+      </td></tr>
+    </table>
+
+    <!-- Warning Box -->
+    <div style="
+      background:#fff5f5;
+      border-left:4px solid #e63946;
+      border-radius:0 8px 8px 0;
+      padding:16px 18px;
+      margin-bottom:24px;
+    ">
+      <strong style="color:#c1121f;font-size:14px;">⚠️ Wasn't you?</strong>
+      <p style="margin:8px 0 0;color:#6b3a3a;font-size:13px;line-height:1.6;">
+        If you did not make this change, your account may be compromised.
+        Please <strong>reset your password immediately</strong> and contact our support team.
+      </p>
+    </div>
+
+    <!-- What happened -->
+    <div style="
+      background:#f8fffe;
+      border:1px solid #d8f3e8;
+      border-radius:10px;
+      padding:16px 18px;
+      margin-bottom:24px;
+    ">
+      <p style="margin:0 0 8px;color:#1b4332;font-size:13px;font-weight:700;">
+        What happened:
+      </p>
+      <ul style="margin:0;padding-left:18px;color:#4a6b5a;font-size:13px;line-height:1.8;">
+        <li>Your password was successfully updated</li>
+        <li>All other active sessions have been logged out</li>
+        <li>You will need to log in again on all devices</li>
+      </ul>
+    </div>
+
+    <p style="margin:24px 0 0;color:#4a6b5a;font-size:14px;">
+      Stay safe,<br/>
+      <strong style="color:#1b4332;">The MY EMDR Security Team</strong>
+    </p>
+  `;
+
+  await sendEmail({
+    to: email,
+    subject: '🔒 Your Password Was Changed — MY EMDR',
+    text: `Hi ${firstName}, your MY EMDR password was changed on ${changedAt}. If this wasn't you, please reset your password immediately.`,
+    html: emailTemplate('Password Changed — MY EMDR', body),
   });
 };
 

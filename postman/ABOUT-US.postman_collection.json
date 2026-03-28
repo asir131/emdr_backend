@@ -1,0 +1,180 @@
+{
+	"info": {
+		"_postman_id": "about-us-001",
+		"name": "About Us — Full Test",
+		"description": "About Us system — GET, POST, PUT + Edge Cases.",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "── SETUP ────────────────────────────",
+			"item": [
+				{
+					"name": "0. Admin Login",
+					"event": [{"listen": "test","script": {"exec": ["const r = pm.response.json();","if (pm.response.code === 200) {","    pm.collectionVariables.set('adminToken', r.data.session.accessToken);","    console.log('✅ Admin token saved');","    pm.test('Admin login OK', () => pm.expect(r.success).to.be.true);","}"],"type": "text/javascript"}}],
+					"request": {
+						"method": "POST",
+						"header": [{"key": "Content-Type","value": "application/json"}],
+						"body": {"mode": "raw","raw": "{\n  \"email\": \"admin@myemdr.com\",\n  \"password\": \"Admin@123456\"\n}"},
+						"url": {"raw": "{{baseUrl}}/api/auth/login","host": ["{{baseUrl}}"],"path": ["api","auth","login"]}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "── MAIN FLOW ────────────────────────",
+			"item": [
+				{
+					"name": "1. GET About Us (Before Create)",
+					"event": [{"listen": "test","script": {"exec": ["const r = pm.response.json();","pm.test('404 before content exists', () => {","    pm.expect(pm.response.code).to.equal(404);","    console.log('✅ Correctly returns 404 — no content yet');","});"],"type": "text/javascript"}}],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {"raw": "{{baseUrl}}/api/about","host": ["{{baseUrl}}"],"path": ["api","about"]},
+						"description": "No auth required. Returns 404 if not created yet."
+					},
+					"response": []
+				},
+				{
+					"name": "2. POST — Create About Us",
+					"event": [{"listen": "test","script": {"exec": ["const r = pm.response.json();","pm.test('About Us created', () => {","    pm.expect(pm.response.code).to.equal(201);","    pm.expect(r.success).to.be.true;","    pm.expect(r.data.aboutUs).to.exist;","    pm.expect(r.data._id).to.exist;","    console.log('✅ About Us created');","    console.log('📝 Content length:', r.data.aboutUs.length, 'chars');","});"],"type": "text/javascript"}}],
+					"request": {
+						"auth": {"type": "bearer","bearer": [{"key": "token","value": "{{adminToken}}","type": "string"}]},
+						"method": "POST",
+						"header": [{"key": "Content-Type","value": "application/json"}],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"aboutUs\": \"MY EMDR is a leading mental health and wellness platform dedicated to providing accessible, evidence-based EMDR therapy tools. Founded with the mission to make trauma recovery available to everyone, we combine cutting-edge technology with compassionate care. Our platform connects users with certified therapists and provides guided self-help resources to support healing journeys worldwide.\"\n}"
+						},
+						"url": {"raw": "{{baseUrl}}/api/about","host": ["{{baseUrl}}"],"path": ["api","about"]},
+						"description": "Admin creates About Us content. Only one record allowed."
+					},
+					"response": []
+				},
+				{
+					"name": "3. GET About Us (After Create)",
+					"event": [{"listen": "test","script": {"exec": ["const r = pm.response.json();","pm.test('About Us returned', () => {","    pm.expect(pm.response.code).to.equal(200);","    pm.expect(r.success).to.be.true;","    pm.expect(r.data.aboutUs).to.exist;","    pm.expect(r.data.createdAt).to.exist;","    pm.expect(r.data.updatedAt).to.exist;","    console.log('✅ About Us fetched (may be cached)');","    console.log('📝 Content:', r.data.aboutUs.substring(0, 80) + '...');","});"],"type": "text/javascript"}}],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {"raw": "{{baseUrl}}/api/about","host": ["{{baseUrl}}"],"path": ["api","about"]},
+						"description": "Public endpoint. Response is cached for 1 hour."
+					},
+					"response": []
+				},
+				{
+					"name": "4. PUT — Update About Us",
+					"event": [{"listen": "test","script": {"exec": ["const r = pm.response.json();","pm.test('About Us updated', () => {","    pm.expect(pm.response.code).to.equal(200);","    pm.expect(r.success).to.be.true;","    pm.expect(r.data.aboutUs).to.include('updated');","    console.log('✅ About Us updated successfully');","    console.log('📝 New content length:', r.data.aboutUs.length, 'chars');","});"],"type": "text/javascript"}}],
+					"request": {
+						"auth": {"type": "bearer","bearer": [{"key": "token","value": "{{adminToken}}","type": "string"}]},
+						"method": "PUT",
+						"header": [{"key": "Content-Type","value": "application/json"}],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"aboutUs\": \"MY EMDR is a leading mental health platform — updated with new mission statement. We are dedicated to providing accessible, evidence-based EMDR therapy tools for trauma recovery. Our updated platform now supports 50+ countries with multilingual therapy resources and certified therapist connections.\"\n}"
+						},
+						"url": {"raw": "{{baseUrl}}/api/about","host": ["{{baseUrl}}"],"path": ["api","about"]},
+						"description": "Admin updates About Us. Replaces existing content. Cache is invalidated."
+					},
+					"response": []
+				},
+				{
+					"name": "5. GET About Us (After Update)",
+					"event": [{"listen": "test","script": {"exec": ["const r = pm.response.json();","pm.test('Updated content returned', () => {","    pm.expect(pm.response.code).to.equal(200);","    pm.expect(r.data.aboutUs).to.include('updated');","    console.log('✅ Updated content confirmed');","});"],"type": "text/javascript"}}],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {"raw": "{{baseUrl}}/api/about","host": ["{{baseUrl}}"],"path": ["api","about"]},
+						"description": "Verify updated content is returned (cache was invalidated on PUT)."
+					},
+					"response": []
+				},
+				{
+					"name": "6. PUT — Upsert (If No Record Exists)",
+					"event": [{"listen": "test","script": {"exec": ["pm.test('Upsert works', () => {","    pm.expect(pm.response.code).to.equal(200);","    console.log('✅ PUT upsert works — creates if not exists');","});"],"type": "text/javascript"}}],
+					"request": {
+						"auth": {"type": "bearer","bearer": [{"key": "token","value": "{{adminToken}}","type": "string"}]},
+						"method": "PUT",
+						"header": [{"key": "Content-Type","value": "application/json"}],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"aboutUs\": \"MY EMDR — final version. A trusted mental health platform serving users globally with evidence-based EMDR therapy tools and certified therapist connections.\"\n}"
+						},
+						"url": {"raw": "{{baseUrl}}/api/about","host": ["{{baseUrl}}"],"path": ["api","about"]},
+						"description": "PUT always works — creates if not exists (upsert), updates if exists."
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "── EDGE CASES ───────────────────────",
+			"item": [
+				{
+					"name": "❌ POST Again (Already Exists — 400)",
+					"event": [{"listen": "test","script": {"exec": ["pm.test('Duplicate POST rejected', () => {","    pm.expect(pm.response.code).to.equal(400);","    console.log('✅ Correctly blocked — About Us already exists');","    console.log('💡 Use PUT to update');","});"],"type": "text/javascript"}}],
+					"request": {
+						"auth": {"type": "bearer","bearer": [{"key": "token","value": "{{adminToken}}","type": "string"}]},
+						"method": "POST",
+						"header": [{"key": "Content-Type","value": "application/json"}],
+						"body": {"mode": "raw","raw": "{\n  \"aboutUs\": \"Trying to create again — should fail.\"\n}"},
+						"url": {"raw": "{{baseUrl}}/api/about","host": ["{{baseUrl}}"],"path": ["api","about"]},
+						"description": "POST only works once. Second POST returns 400."
+					},
+					"response": []
+				},
+				{
+					"name": "❌ No Token on POST (401)",
+					"event": [{"listen": "test","script": {"exec": ["pm.test('Blocked without token', () => {","    pm.expect(pm.response.code).to.equal(401);","    console.log('✅ Correctly blocked — no auth token');","});"],"type": "text/javascript"}}],
+					"request": {
+						"method": "POST",
+						"header": [{"key": "Content-Type","value": "application/json"}],
+						"body": {"mode": "raw","raw": "{\n  \"aboutUs\": \"Should be blocked.\"\n}"},
+						"url": {"raw": "{{baseUrl}}/api/about","host": ["{{baseUrl}}"],"path": ["api","about"]}
+					},
+					"response": []
+				},
+				{
+					"name": "❌ No Token on PUT (401)",
+					"event": [{"listen": "test","script": {"exec": ["pm.test('Blocked without token', () => {","    pm.expect(pm.response.code).to.equal(401);","    console.log('✅ Correctly blocked — no auth token');","});"],"type": "text/javascript"}}],
+					"request": {
+						"method": "PUT",
+						"header": [{"key": "Content-Type","value": "application/json"}],
+						"body": {"mode": "raw","raw": "{\n  \"aboutUs\": \"Should be blocked.\"\n}"},
+						"url": {"raw": "{{baseUrl}}/api/about","host": ["{{baseUrl}}"],"path": ["api","about"]}
+					},
+					"response": []
+				},
+				{
+					"name": "❌ Content Too Short (400)",
+					"event": [{"listen": "test","script": {"exec": ["pm.test('Short content rejected', () => {","    pm.expect(pm.response.code).to.equal(400);","    console.log('✅ Correctly rejected — content too short (min 10 chars)');","});"],"type": "text/javascript"}}],
+					"request": {
+						"auth": {"type": "bearer","bearer": [{"key": "token","value": "{{adminToken}}","type": "string"}]},
+						"method": "PUT",
+						"header": [{"key": "Content-Type","value": "application/json"}],
+						"body": {"mode": "raw","raw": "{\n  \"aboutUs\": \"Short\"\n}"},
+						"url": {"raw": "{{baseUrl}}/api/about","host": ["{{baseUrl}}"],"path": ["api","about"]}
+					},
+					"response": []
+				},
+				{
+					"name": "❌ Missing aboutUs Field (400)",
+					"event": [{"listen": "test","script": {"exec": ["pm.test('Missing field rejected', () => {","    pm.expect(pm.response.code).to.equal(400);","    console.log('✅ Correctly rejected — aboutUs field missing');","});"],"type": "text/javascript"}}],
+					"request": {
+						"auth": {"type": "bearer","bearer": [{"key": "token","value": "{{adminToken}}","type": "string"}]},
+						"method": "PUT",
+						"header": [{"key": "Content-Type","value": "application/json"}],
+						"body": {"mode": "raw","raw": "{}"},
+						"url": {"raw": "{{baseUrl}}/api/about","host": ["{{baseUrl}}"],"path": ["api","about"]}
+					},
+					"response": []
+				}
+			]
+		}
+	],
+	"variable": [
+		{"key": "baseUrl",    "value": "http://localhost:5005", "type": "string"},
+		{"key": "adminToken", "value": "", "type": "string"}
+	]
+}

@@ -1,0 +1,187 @@
+{
+	"info": {
+		"_postman_id": "location-system-001",
+		"name": "Location System — Share & Get",
+		"description": "Location sharing — POST (share lat/lng) and GET (get location with auto reverse geocoded address).",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "── SETUP ────────────────────────────",
+			"item": [
+				{
+					"name": "0. User Login",
+					"event": [{"listen": "test","script": {"exec": ["const r = pm.response.json();","if (pm.response.code === 200) {","    pm.collectionVariables.set('userToken', r.data.session.accessToken);","    console.log('✅ User token saved');","    pm.test('Login OK', () => pm.expect(r.success).to.be.true);","}"],"type": "text/javascript"}}],
+					"request": {
+						"method": "POST",
+						"header": [{"key": "Content-Type","value": "application/json"}],
+						"body": {"mode": "raw","raw": "{\n  \"email\": \"rakib@example.com\",\n  \"password\": \"Test@1234\"\n}"},
+						"url": {"raw": "{{baseUrl}}/api/auth/login","host": ["{{baseUrl}}"],"path": ["api","auth","login"]}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "── MAIN FLOW ────────────────────────",
+			"item": [
+				{
+					"name": "1. GET Location (Before Share — 404)",
+					"event": [{"listen": "test","script": {"exec": ["pm.test('404 before sharing location', () => {","    pm.expect(pm.response.code).to.equal(404);","    console.log('✅ Correctly returns 404 — no location shared yet');","});"],"type": "text/javascript"}}],
+					"request": {
+						"auth": {"type": "bearer","bearer": [{"key": "token","value": "{{userToken}}","type": "string"}]},
+						"method": "GET",
+						"header": [],
+						"url": {"raw": "{{baseUrl}}/api/location","host": ["{{baseUrl}}"],"path": ["api","location"]},
+						"description": "Returns 404 if user hasn't shared location yet."
+					},
+					"response": []
+				},
+				{
+					"name": "2. POST — Share Location (Dhaka)",
+					"event": [{"listen": "test","script": {"exec": ["const r = pm.response.json();","pm.test('Location shared successfully', () => {","    pm.expect(pm.response.code).to.equal(201);","    pm.expect(r.success).to.be.true;","    pm.expect(r.data.latitude).to.equal(23.8103);","    pm.expect(r.data.longitude).to.equal(90.4125);","    pm.expect(r.data.sharedAt).to.exist;","    console.log('✅ Location shared');","    console.log('📍 Lat:', r.data.latitude, '| Lng:', r.data.longitude);","    console.log('🕐 Shared at:', r.data.sharedAt);","});"],"type": "text/javascript"}}],
+					"request": {
+						"auth": {"type": "bearer","bearer": [{"key": "token","value": "{{userToken}}","type": "string"}]},
+						"method": "POST",
+						"header": [{"key": "Content-Type","value": "application/json"}],
+						"body": {"mode": "raw","raw": "{\n  \"latitude\": 23.8103,\n  \"longitude\": 90.4125\n}"},
+						"url": {"raw": "{{baseUrl}}/api/location","host": ["{{baseUrl}}"],"path": ["api","location"]},
+						"description": "Share current location — only latitude and longitude required."
+					},
+					"response": []
+				},
+				{
+					"name": "3. GET — My Location (With Address)",
+					"event": [{"listen": "test","script": {"exec": ["const r = pm.response.json();","pm.test('Location returned with address', () => {","    pm.expect(pm.response.code).to.equal(200);","    pm.expect(r.success).to.be.true;","    pm.expect(r.data.latitude).to.exist;","    pm.expect(r.data.longitude).to.exist;","    pm.expect(r.data.address).to.exist;","    pm.expect(r.data.mapsUrl).to.include('google.com/maps');","    console.log('✅ Location fetched with reverse geocoded address');","    console.log('📍 Lat:', r.data.latitude);","    console.log('📍 Lng:', r.data.longitude);","    console.log('🏠 Address:', r.data.address);","    console.log('🗺️  Maps URL:', r.data.mapsUrl);","    console.log('🕐 Shared at:', r.data.sharedAt);","});"],"type": "text/javascript"}}],
+					"request": {
+						"auth": {"type": "bearer","bearer": [{"key": "token","value": "{{userToken}}","type": "string"}]},
+						"method": "GET",
+						"header": [],
+						"url": {"raw": "{{baseUrl}}/api/location","host": ["{{baseUrl}}"],"path": ["api","location"]},
+						"description": "Returns latest location with auto reverse geocoded address from OpenStreetMap + Google Maps URL."
+					},
+					"response": []
+				},
+				{
+					"name": "4. POST — Share New Location (Cox's Bazar)",
+					"event": [{"listen": "test","script": {"exec": ["const r = pm.response.json();","pm.test('New location shared', () => {","    pm.expect(pm.response.code).to.equal(201);","    pm.expect(r.data.latitude).to.equal(21.4272);","    console.log('✅ New location shared — Cox\\'s Bazar');","});"],"type": "text/javascript"}}],
+					"request": {
+						"auth": {"type": "bearer","bearer": [{"key": "token","value": "{{userToken}}","type": "string"}]},
+						"method": "POST",
+						"header": [{"key": "Content-Type","value": "application/json"}],
+						"body": {"mode": "raw","raw": "{\n  \"latitude\": 21.4272,\n  \"longitude\": 92.0058,\n  \"accuracy\": 15\n}"},
+						"url": {"raw": "{{baseUrl}}/api/location","host": ["{{baseUrl}}"],"path": ["api","location"]},
+						"description": "Share a new location — with optional accuracy in meters."
+					},
+					"response": []
+				},
+				{
+					"name": "5. GET — Latest Location (Cox's Bazar)",
+					"event": [{"listen": "test","script": {"exec": ["const r = pm.response.json();","pm.test('Latest location returned', () => {","    pm.expect(pm.response.code).to.equal(200);","    pm.expect(r.data.latitude).to.equal(21.4272);","    console.log('✅ Latest location is Cox\\'s Bazar');","    console.log('🏠 Address:', r.data.address);","    console.log('🗺️  Maps:', r.data.mapsUrl);","});"],"type": "text/javascript"}}],
+					"request": {
+						"auth": {"type": "bearer","bearer": [{"key": "token","value": "{{userToken}}","type": "string"}]},
+						"method": "GET",
+						"header": [],
+						"url": {"raw": "{{baseUrl}}/api/location","host": ["{{baseUrl}}"],"path": ["api","location"]},
+						"description": "Always returns the most recent location."
+					},
+					"response": []
+				},
+				{
+					"name": "6. POST — London Location",
+					"event": [{"listen": "test","script": {"exec": ["pm.test('London location shared', () => {","    pm.expect(pm.response.code).to.equal(201);","    console.log('✅ London location shared');","});"],"type": "text/javascript"}}],
+					"request": {
+						"auth": {"type": "bearer","bearer": [{"key": "token","value": "{{userToken}}","type": "string"}]},
+						"method": "POST",
+						"header": [{"key": "Content-Type","value": "application/json"}],
+						"body": {"mode": "raw","raw": "{\n  \"latitude\": 51.5074,\n  \"longitude\": -0.1278\n}"},
+						"url": {"raw": "{{baseUrl}}/api/location","host": ["{{baseUrl}}"],"path": ["api","location"]},
+						"description": "Test with international coordinates — London, UK."
+					},
+					"response": []
+				},
+				{
+					"name": "7. GET — London Address",
+					"event": [{"listen": "test","script": {"exec": ["const r = pm.response.json();","pm.test('London address returned', () => {","    pm.expect(pm.response.code).to.equal(200);","    console.log('✅ London address:', r.data.address);","    console.log('🗺️  Maps:', r.data.mapsUrl);","});"],"type": "text/javascript"}}],
+					"request": {
+						"auth": {"type": "bearer","bearer": [{"key": "token","value": "{{userToken}}","type": "string"}]},
+						"method": "GET",
+						"header": [],
+						"url": {"raw": "{{baseUrl}}/api/location","host": ["{{baseUrl}}"],"path": ["api","location"]},
+						"description": "Verify London address from reverse geocoding."
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "── EDGE CASES ───────────────────────",
+			"item": [
+				{
+					"name": "❌ No Token (401)",
+					"event": [{"listen": "test","script": {"exec": ["pm.test('Blocked without token', () => {","    pm.expect(pm.response.code).to.equal(401);","    console.log('✅ Correctly blocked — no token');","});"],"type": "text/javascript"}}],
+					"request": {
+						"method": "POST",
+						"header": [{"key": "Content-Type","value": "application/json"}],
+						"body": {"mode": "raw","raw": "{\n  \"latitude\": 23.8103,\n  \"longitude\": 90.4125\n}"},
+						"url": {"raw": "{{baseUrl}}/api/location","host": ["{{baseUrl}}"],"path": ["api","location"]}
+					},
+					"response": []
+				},
+				{
+					"name": "❌ Missing Latitude (400)",
+					"event": [{"listen": "test","script": {"exec": ["pm.test('Missing latitude rejected', () => {","    pm.expect(pm.response.code).to.equal(400);","    console.log('✅ Correctly rejected — latitude missing');","});"],"type": "text/javascript"}}],
+					"request": {
+						"auth": {"type": "bearer","bearer": [{"key": "token","value": "{{userToken}}","type": "string"}]},
+						"method": "POST",
+						"header": [{"key": "Content-Type","value": "application/json"}],
+						"body": {"mode": "raw","raw": "{\n  \"longitude\": 90.4125\n}"},
+						"url": {"raw": "{{baseUrl}}/api/location","host": ["{{baseUrl}}"],"path": ["api","location"]}
+					},
+					"response": []
+				},
+				{
+					"name": "❌ Invalid Latitude Range (400)",
+					"event": [{"listen": "test","script": {"exec": ["pm.test('Invalid latitude rejected', () => {","    pm.expect(pm.response.code).to.equal(400);","    console.log('✅ Correctly rejected — latitude out of range (-90 to 90)');","});"],"type": "text/javascript"}}],
+					"request": {
+						"auth": {"type": "bearer","bearer": [{"key": "token","value": "{{userToken}}","type": "string"}]},
+						"method": "POST",
+						"header": [{"key": "Content-Type","value": "application/json"}],
+						"body": {"mode": "raw","raw": "{\n  \"latitude\": 999,\n  \"longitude\": 90.4125\n}"},
+						"url": {"raw": "{{baseUrl}}/api/location","host": ["{{baseUrl}}"],"path": ["api","location"]}
+					},
+					"response": []
+				},
+				{
+					"name": "❌ Invalid Longitude Range (400)",
+					"event": [{"listen": "test","script": {"exec": ["pm.test('Invalid longitude rejected', () => {","    pm.expect(pm.response.code).to.equal(400);","    console.log('✅ Correctly rejected — longitude out of range (-180 to 180)');","});"],"type": "text/javascript"}}],
+					"request": {
+						"auth": {"type": "bearer","bearer": [{"key": "token","value": "{{userToken}}","type": "string"}]},
+						"method": "POST",
+						"header": [{"key": "Content-Type","value": "application/json"}],
+						"body": {"mode": "raw","raw": "{\n  \"latitude\": 23.8103,\n  \"longitude\": 999\n}"},
+						"url": {"raw": "{{baseUrl}}/api/location","host": ["{{baseUrl}}"],"path": ["api","location"]}
+					},
+					"response": []
+				},
+				{
+					"name": "❌ String Instead of Number (400)",
+					"event": [{"listen": "test","script": {"exec": ["pm.test('String coordinates rejected', () => {","    pm.expect(pm.response.code).to.equal(400);","    console.log('✅ Correctly rejected — must be numbers');","});"],"type": "text/javascript"}}],
+					"request": {
+						"auth": {"type": "bearer","bearer": [{"key": "token","value": "{{userToken}}","type": "string"}]},
+						"method": "POST",
+						"header": [{"key": "Content-Type","value": "application/json"}],
+						"body": {"mode": "raw","raw": "{\n  \"latitude\": \"23.8103\",\n  \"longitude\": \"90.4125\"\n}"},
+						"url": {"raw": "{{baseUrl}}/api/location","host": ["{{baseUrl}}"],"path": ["api","location"]},
+						"description": "Coordinates must be numbers, not strings."
+					},
+					"response": []
+				}
+			]
+		}
+	],
+	"variable": [
+		{"key": "baseUrl",   "value": "http://localhost:5005", "type": "string"},
+		{"key": "userToken", "value": "", "type": "string"}
+	]
+}

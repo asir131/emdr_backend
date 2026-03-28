@@ -15,7 +15,7 @@ const mkLimiter = (max: number, windowMs: number, msg: string) =>
   rateLimit({ windowMs, max, standardHeaders: true, legacyHeaders: false,
     message: { success: false, error: { code: 'TOO_MANY_REQUESTS', message: msg } } });
 
-const signupLimiter = mkLimiter(5,  10 * 60 * 1000, 'Too many signup attempts');
+const signupLimiter = mkLimiter(10,  10 * 60 * 1000, 'Too many signup attempts');
 const otpLimiter    = mkLimiter(10, 10 * 60 * 1000, 'Too many OTP attempts');
 const loginLimiter  = mkLimiter(10, 15 * 60 * 1000, 'Too many login attempts');
 const googleLimiter = mkLimiter(20, 15 * 60 * 1000, 'Too many Google auth attempts');

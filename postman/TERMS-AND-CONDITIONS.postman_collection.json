@@ -1,0 +1,310 @@
+{
+	"info": {
+		"_postman_id": "terms-conditions-001",
+		"name": "Terms & Conditions — Full Test",
+		"description": "Terms & Conditions CRUD, User Acceptance, Changelog, EffectiveDate — complete flow.",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "── SETUP ────────────────────────────",
+			"item": [
+				{
+					"name": "0a. Admin Login",
+					"event": [{"listen": "test","script": {"exec": ["const r = pm.response.json();","if (pm.response.code === 200) {","    pm.collectionVariables.set('adminToken', r.data.session.accessToken);","    console.log('✅ Admin token saved');","    pm.test('Admin login OK', () => pm.expect(r.success).to.be.true);","}"],"type": "text/javascript"}}],
+					"request": {
+						"method": "POST",
+						"header": [{"key": "Content-Type","value": "application/json"}],
+						"body": {"mode": "raw","raw": "{\n  \"email\": \"admin@example.com\",\n  \"password\": \"Admin@1234\"\n}"},
+						"url": {"raw": "{{baseUrl}}/api/auth/login","host": ["{{baseUrl}}"],"path": ["api","auth","login"]}
+					},
+					"response": []
+				},
+				{
+					"name": "0b. User Login",
+					"event": [{"listen": "test","script": {"exec": ["const r = pm.response.json();","if (pm.response.code === 200) {","    pm.collectionVariables.set('userToken', r.data.session.accessToken);","    pm.collectionVariables.set('userId', r.data.user.id);","    console.log('✅ User token saved');","    pm.test('User login OK', () => pm.expect(r.success).to.be.true);","}"],"type": "text/javascript"}}],
+					"request": {
+						"method": "POST",
+						"header": [{"key": "Content-Type","value": "application/json"}],
+						"body": {"mode": "raw","raw": "{\n  \"email\": \"rakib@example.com\",\n  \"password\": \"Test@1234\"\n}"},
+						"url": {"raw": "{{baseUrl}}/api/auth/login","host": ["{{baseUrl}}"],"path": ["api","auth","login"]}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "── PUBLIC ───────────────────────────",
+			"item": [
+				{
+					"name": "1. Get Active T&C (Public)",
+					"event": [{"listen": "test","script": {"exec": ["const r = pm.response.json();","pm.test('Active T&C returned', () => {","    pm.expect(pm.response.code).to.equal(200);","    pm.expect(r.success).to.be.true;","    pm.expect(r.data.sections).to.be.an('array');","    pm.expect(r.data.version).to.exist;","    pm.expect(r.data.effectiveDate).to.exist;","    pm.collectionVariables.set('activeTermsId', r.data._id);","    console.log('✅ Active T&C version:', r.data.version);","    console.log('📅 Effective:', r.data.effectiveDate);","    console.log('📝 Changelog:', r.data.changelog);","});"],"type": "text/javascript"}}],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {"raw": "{{baseUrl}}/api/terms/active","host": ["{{baseUrl}}"],"path": ["api","terms","active"]},
+						"description": "No auth required. Returns cached active T&C."
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "── ADMIN CRUD ───────────────────────",
+			"item": [
+				{
+					"name": "2. Create T&C v1.0",
+					"event": [{"listen": "test","script": {"exec": ["const r = pm.response.json();","pm.test('T&C v1.0 created', () => {","    pm.expect(pm.response.code).to.equal(201);","    pm.expect(r.success).to.be.true;","    pm.expect(r.data.version).to.equal('1.0');","    pm.expect(r.data.effectiveDate).to.exist;","    pm.expect(r.data.changelog).to.exist;","    pm.collectionVariables.set('termsV1Id', r.data._id);","    console.log('✅ T&C v1.0 created, ID:', r.data._id);","});"],"type": "text/javascript"}}],
+					"request": {
+						"auth": {"type": "bearer","bearer": [{"key": "token","value": "{{adminToken}}","type": "string"}]},
+						"method": "POST",
+						"header": [{"key": "Content-Type","value": "application/json"}],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"version\": \"1.0\",\n  \"effectiveDate\": \"2026-01-01T00:00:00.000Z\",\n  \"changelog\": \"Initial version of Terms & Conditions.\",\n  \"contactEmail\": \"legal@myemdr.com\",\n  \"contactName\": \"MY EMDR Legal Team\",\n  \"sections\": [\n    {\n      \"order\": 1,\n      \"title\": \"Introduction\",\n      \"content\": \"Welcome to MY EMDR. By using our services, you agree to these terms.\"\n    },\n    {\n      \"order\": 2,\n      \"title\": \"Eligibility\",\n      \"content\": \"You must be at least 18 years old to use this service.\"\n    },\n    {\n      \"order\": 3,\n      \"title\": \"User Responsibilities\",\n      \"content\": \"You are responsible for maintaining the confidentiality of your account.\",\n      \"bullets\": [\n        \"Do not share your password with others.\",\n        \"Notify us immediately of any unauthorized access.\",\n        \"Use the service only for lawful purposes.\"\n      ]\n    },\n    {\n      \"order\": 4,\n      \"title\": \"Prohibited Activities\",\n      \"content\": \"The following activities are strictly prohibited on our platform.\",\n      \"bullets\": [\n        \"Attempting to hack or disrupt the service.\",\n        \"Uploading malicious content.\"\n      ]\n    }\n  ]\n}"
+						},
+						"url": {"raw": "{{baseUrl}}/api/terms","host": ["{{baseUrl}}"],"path": ["api","terms"]},
+						"description": "Admin creates T&C v1.0 with effectiveDate and changelog."
+					},
+					"response": []
+				},
+				{
+					"name": "3. Create T&C v2.0 (auto-activates)",
+					"event": [{"listen": "test","script": {"exec": ["const r = pm.response.json();","pm.test('T&C v2.0 created and active', () => {","    pm.expect(pm.response.code).to.equal(201);","    pm.expect(r.data.version).to.equal('2.0');","    pm.expect(r.data.isActive).to.be.true;","    pm.collectionVariables.set('termsV2Id', r.data._id);","    pm.collectionVariables.set('activeTermsId', r.data._id);","    console.log('✅ T&C v2.0 created and auto-activated');","    console.log('📝 Changelog:', r.data.changelog);","});"],"type": "text/javascript"}}],
+					"request": {
+						"auth": {"type": "bearer","bearer": [{"key": "token","value": "{{adminToken}}","type": "string"}]},
+						"method": "POST",
+						"header": [{"key": "Content-Type","value": "application/json"}],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"version\": \"2.0\",\n  \"effectiveDate\": \"2026-04-01T00:00:00.000Z\",\n  \"changelog\": \"Added section 5 about data privacy. Updated eligibility age to 16+. Revised prohibited activities list.\",\n  \"contactEmail\": \"legal@myemdr.com\",\n  \"contactName\": \"MY EMDR Legal Team\",\n  \"sections\": [\n    {\n      \"order\": 1,\n      \"title\": \"Introduction\",\n      \"content\": \"Welcome to MY EMDR v2. These updated terms govern your use of our platform.\"\n    },\n    {\n      \"order\": 2,\n      \"title\": \"Eligibility\",\n      \"content\": \"You must be at least 16 years old to use this service.\"\n    },\n    {\n      \"order\": 3,\n      \"title\": \"User Responsibilities\",\n      \"content\": \"You are responsible for all activity under your account.\",\n      \"bullets\": [\n        \"Keep your credentials secure.\",\n        \"Report suspicious activity immediately.\",\n        \"Use the service only for lawful purposes.\"\n      ]\n    },\n    {\n      \"order\": 4,\n      \"title\": \"Prohibited Activities\",\n      \"content\": \"Strictly prohibited activities include but are not limited to:\",\n      \"bullets\": [\n        \"Hacking or disrupting the service.\",\n        \"Uploading malicious content.\",\n        \"Impersonating other users.\"\n      ]\n    },\n    {\n      \"order\": 5,\n      \"title\": \"Data Privacy\",\n      \"content\": \"We collect and process your data in accordance with our Privacy Policy.\"\n    }\n  ]\n}"
+						},
+						"url": {"raw": "{{baseUrl}}/api/terms","host": ["{{baseUrl}}"],"path": ["api","terms"]},
+						"description": "Creates v2.0 — automatically deactivates v1.0 and activates v2.0."
+					},
+					"response": []
+				},
+				{
+					"name": "4. Get All Versions (History)",
+					"event": [{"listen": "test","script": {"exec": ["const r = pm.response.json();","pm.test('Version history returned', () => {","    pm.expect(pm.response.code).to.equal(200);","    pm.expect(r.data).to.be.an('array');","    console.log('✅ Total versions:', r.data.length);","    r.data.forEach(v => console.log(`  - v${v.version} | active: ${v.isActive} | effective: ${v.effectiveDate}`));","});"],"type": "text/javascript"}}],
+					"request": {
+						"auth": {"type": "bearer","bearer": [{"key": "token","value": "{{adminToken}}","type": "string"}]},
+						"method": "GET",
+						"header": [],
+						"url": {"raw": "{{baseUrl}}/api/terms","host": ["{{baseUrl}}"],"path": ["api","terms"]},
+						"description": "Returns all versions with version, effectiveDate, changelog, isActive."
+					},
+					"response": []
+				},
+				{
+					"name": "5. Get Single Version by ID",
+					"event": [{"listen": "test","script": {"exec": ["const r = pm.response.json();","pm.test('Single version returned', () => {","    pm.expect(pm.response.code).to.equal(200);","    pm.expect(r.data.sections).to.be.an('array');","    pm.expect(r.data.changelog).to.exist;","    pm.expect(r.data.effectiveDate).to.exist;","    console.log('✅ Version:', r.data.version, '| Changelog:', r.data.changelog);","});"],"type": "text/javascript"}}],
+					"request": {
+						"auth": {"type": "bearer","bearer": [{"key": "token","value": "{{adminToken}}","type": "string"}]},
+						"method": "GET",
+						"header": [],
+						"url": {"raw": "{{baseUrl}}/api/terms/{{termsV2Id}}","host": ["{{baseUrl}}"],"path": ["api","terms","{{termsV2Id}}"]},
+						"description": "Get full details of a specific version."
+					},
+					"response": []
+				},
+				{
+					"name": "6. Update T&C (Patch)",
+					"event": [{"listen": "test","script": {"exec": ["const r = pm.response.json();","pm.test('T&C updated', () => {","    pm.expect(pm.response.code).to.equal(200);","    pm.expect(r.data.contactEmail).to.equal('support@myemdr.com');","    console.log('✅ T&C updated successfully');","});"],"type": "text/javascript"}}],
+					"request": {
+						"auth": {"type": "bearer","bearer": [{"key": "token","value": "{{adminToken}}","type": "string"}]},
+						"method": "PATCH",
+						"header": [{"key": "Content-Type","value": "application/json"}],
+						"body": {"mode": "raw","raw": "{\n  \"contactEmail\": \"support@myemdr.com\",\n  \"changelog\": \"Updated contact email to support address.\"\n}"},
+						"url": {"raw": "{{baseUrl}}/api/terms/{{termsV2Id}}","host": ["{{baseUrl}}"],"path": ["api","terms","{{termsV2Id}}"]},
+						"description": "Partial update — only send fields you want to change."
+					},
+					"response": []
+				},
+				{
+					"name": "7. Activate v1.0 (Rollback)",
+					"event": [{"listen": "test","script": {"exec": ["const r = pm.response.json();","pm.test('v1.0 activated (rollback)', () => {","    pm.expect(pm.response.code).to.equal(200);","    pm.expect(r.data.isActive).to.be.true;","    console.log('✅ Rolled back to v1.0');","});"],"type": "text/javascript"}}],
+					"request": {
+						"auth": {"type": "bearer","bearer": [{"key": "token","value": "{{adminToken}}","type": "string"}]},
+						"method": "PATCH",
+						"header": [],
+						"url": {"raw": "{{baseUrl}}/api/terms/{{termsV1Id}}/activate","host": ["{{baseUrl}}"],"path": ["api","terms","{{termsV1Id}}","activate"]},
+						"description": "Rollback to v1.0 — deactivates v2.0, activates v1.0."
+					},
+					"response": []
+				},
+				{
+					"name": "8. Re-activate v2.0",
+					"event": [{"listen": "test","script": {"exec": ["pm.test('v2.0 re-activated', () => {","    pm.expect(pm.response.code).to.equal(200);","    console.log('✅ v2.0 is active again');","});"],"type": "text/javascript"}}],
+					"request": {
+						"auth": {"type": "bearer","bearer": [{"key": "token","value": "{{adminToken}}","type": "string"}]},
+						"method": "PATCH",
+						"header": [],
+						"url": {"raw": "{{baseUrl}}/api/terms/{{termsV2Id}}/activate","host": ["{{baseUrl}}"],"path": ["api","terms","{{termsV2Id}}","activate"]},
+						"description": "Re-activate v2.0 for further testing."
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "── USER ACCEPTANCE ──────────────────",
+			"item": [
+				{
+					"name": "9. Check Acceptance Status (Before)",
+					"event": [{"listen": "test","script": {"exec": ["const r = pm.response.json();","pm.test('Acceptance status returned', () => {","    pm.expect(pm.response.code).to.equal(200);","    pm.expect(r.data).to.have.property('hasAccepted');","    pm.expect(r.data).to.have.property('currentVersion');","    pm.expect(r.data).to.have.property('effectiveDate');","    console.log('✅ Has accepted:', r.data.hasAccepted);","    console.log('📋 Current version:', r.data.currentVersion);","    console.log('📅 Effective date:', r.data.effectiveDate);","});"],"type": "text/javascript"}}],
+					"request": {
+						"auth": {"type": "bearer","bearer": [{"key": "token","value": "{{userToken}}","type": "string"}]},
+						"method": "GET",
+						"header": [],
+						"url": {"raw": "{{baseUrl}}/api/terms/acceptance/status","host": ["{{baseUrl}}"],"path": ["api","terms","acceptance","status"]},
+						"description": "Check if current user has accepted the active T&C."
+					},
+					"response": []
+				},
+				{
+					"name": "10. Accept T&C",
+					"event": [{"listen": "test","script": {"exec": ["const r = pm.response.json();","pm.test('T&C accepted successfully', () => {","    pm.expect(pm.response.code).to.equal(200);","    pm.expect(r.success).to.be.true;","    pm.expect(r.data.message).to.include('accepted');","    pm.expect(r.data.version).to.exist;","    pm.expect(r.data.acceptedAt).to.exist;","    console.log('✅ T&C accepted — version:', r.data.version);","    console.log('🕐 Accepted at:', r.data.acceptedAt);","});"],"type": "text/javascript"}}],
+					"request": {
+						"auth": {"type": "bearer","bearer": [{"key": "token","value": "{{userToken}}","type": "string"}]},
+						"method": "POST",
+						"header": [{"key": "Content-Type","value": "application/json"}],
+						"body": {"mode": "raw","raw": "{\n  \"termsId\": \"{{activeTermsId}}\"\n}"},
+						"url": {"raw": "{{baseUrl}}/api/terms/accept","host": ["{{baseUrl}}"],"path": ["api","terms","accept"]},
+						"description": "User accepts the active T&C. Records IP, UserAgent, timestamp."
+					},
+					"response": []
+				},
+				{
+					"name": "11. Check Acceptance Status (After)",
+					"event": [{"listen": "test","script": {"exec": ["const r = pm.response.json();","pm.test('Now accepted', () => {","    pm.expect(pm.response.code).to.equal(200);","    pm.expect(r.data.hasAccepted).to.be.true;","    pm.expect(r.data.acceptedAt).to.exist;","    console.log('✅ hasAccepted: true');","    console.log('🕐 acceptedAt:', r.data.acceptedAt);","});"],"type": "text/javascript"}}],
+					"request": {
+						"auth": {"type": "bearer","bearer": [{"key": "token","value": "{{userToken}}","type": "string"}]},
+						"method": "GET",
+						"header": [],
+						"url": {"raw": "{{baseUrl}}/api/terms/acceptance/status","host": ["{{baseUrl}}"],"path": ["api","terms","acceptance","status"]},
+						"description": "Verify acceptance is now recorded."
+					},
+					"response": []
+				},
+				{
+					"name": "12. Re-accept T&C (Idempotent)",
+					"event": [{"listen": "test","script": {"exec": ["pm.test('Re-acceptance works (idempotent)', () => {","    pm.expect(pm.response.code).to.equal(200);","    console.log('✅ Re-acceptance OK — no duplicate error');","});"],"type": "text/javascript"}}],
+					"request": {
+						"auth": {"type": "bearer","bearer": [{"key": "token","value": "{{userToken}}","type": "string"}]},
+						"method": "POST",
+						"header": [{"key": "Content-Type","value": "application/json"}],
+						"body": {"mode": "raw","raw": "{\n  \"termsId\": \"{{activeTermsId}}\"\n}"},
+						"url": {"raw": "{{baseUrl}}/api/terms/accept","host": ["{{baseUrl}}"],"path": ["api","terms","accept"]},
+						"description": "Accepting again updates timestamp — no duplicate error."
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "── ADMIN STATS ──────────────────────",
+			"item": [
+				{
+					"name": "13. Get Acceptance Stats",
+					"event": [{"listen": "test","script": {"exec": ["const r = pm.response.json();","pm.test('Acceptance stats returned', () => {","    pm.expect(pm.response.code).to.equal(200);","    pm.expect(r.data).to.have.property('totalAcceptances');","    pm.expect(r.data).to.have.property('recentAcceptances');","    pm.expect(r.data.recentAcceptances).to.be.an('array');","    console.log('✅ Total acceptances:', r.data.totalAcceptances);","    console.log('👥 Recent:', r.data.recentAcceptances.length, 'records');","});"],"type": "text/javascript"}}],
+					"request": {
+						"auth": {"type": "bearer","bearer": [{"key": "token","value": "{{adminToken}}","type": "string"}]},
+						"method": "GET",
+						"header": [],
+						"url": {"raw": "{{baseUrl}}/api/terms/{{termsV2Id}}/stats","host": ["{{baseUrl}}"],"path": ["api","terms","{{termsV2Id}}","stats"]},
+						"description": "Admin sees how many users accepted this version + recent 10."
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "── DELETE & EDGE CASES ──────────────",
+			"item": [
+				{
+					"name": "14. ❌ Delete Active T&C (Should Fail)",
+					"event": [{"listen": "test","script": {"exec": ["pm.test('Cannot delete active T&C', () => {","    pm.expect(pm.response.code).to.equal(400);","    console.log('✅ Correctly blocked — cannot delete active version');","});"],"type": "text/javascript"}}],
+					"request": {
+						"auth": {"type": "bearer","bearer": [{"key": "token","value": "{{adminToken}}","type": "string"}]},
+						"method": "DELETE",
+						"header": [],
+						"url": {"raw": "{{baseUrl}}/api/terms/{{termsV2Id}}","host": ["{{baseUrl}}"],"path": ["api","terms","{{termsV2Id}}"]},
+						"description": "Active version cannot be deleted."
+					},
+					"response": []
+				},
+				{
+					"name": "15. ✅ Delete Inactive v1.0",
+					"event": [{"listen": "test","script": {"exec": ["pm.test('Inactive version deleted', () => {","    pm.expect(pm.response.code).to.equal(200);","    console.log('✅ v1.0 deleted — acceptance records also cleaned up');","});"],"type": "text/javascript"}}],
+					"request": {
+						"auth": {"type": "bearer","bearer": [{"key": "token","value": "{{adminToken}}","type": "string"}]},
+						"method": "DELETE",
+						"header": [],
+						"url": {"raw": "{{baseUrl}}/api/terms/{{termsV1Id}}","host": ["{{baseUrl}}"],"path": ["api","terms","{{termsV1Id}}"]},
+						"description": "Deletes inactive v1.0 and its acceptance records."
+					},
+					"response": []
+				},
+				{
+					"name": "❌ Accept Non-Active T&C (400)",
+					"event": [{"listen": "test","script": {"exec": ["pm.test('Non-active T&C rejected', () => {","    pm.expect([400, 404]).to.include(pm.response.code);","    console.log('✅ Correctly rejected non-active termsId');","});"],"type": "text/javascript"}}],
+					"request": {
+						"auth": {"type": "bearer","bearer": [{"key": "token","value": "{{userToken}}","type": "string"}]},
+						"method": "POST",
+						"header": [{"key": "Content-Type","value": "application/json"}],
+						"body": {"mode": "raw","raw": "{\n  \"termsId\": \"000000000000000000000000\"\n}"},
+						"url": {"raw": "{{baseUrl}}/api/terms/accept","host": ["{{baseUrl}}"],"path": ["api","terms","accept"]},
+						"description": "Fake/inactive termsId should be rejected."
+					},
+					"response": []
+				},
+				{
+					"name": "❌ User Tries Admin Route (403)",
+					"event": [{"listen": "test","script": {"exec": ["pm.test('Non-admin blocked', () => {","    pm.expect(pm.response.code).to.equal(403);","    console.log('✅ Correctly blocked — not admin');","});"],"type": "text/javascript"}}],
+					"request": {
+						"auth": {"type": "bearer","bearer": [{"key": "token","value": "{{userToken}}","type": "string"}]},
+						"method": "POST",
+						"header": [{"key": "Content-Type","value": "application/json"}],
+						"body": {"mode": "raw","raw": "{\n  \"version\": \"hack\",\n  \"sections\": [],\n  \"contactEmail\": \"x@x.com\",\n  \"contactName\": \"x\"\n}"},
+						"url": {"raw": "{{baseUrl}}/api/terms","host": ["{{baseUrl}}"],"path": ["api","terms"]},
+						"description": "Regular user cannot create T&C."
+					},
+					"response": []
+				},
+				{
+					"name": "❌ No Token (401)",
+					"event": [{"listen": "test","script": {"exec": ["pm.test('Blocked without token', () => {","    pm.expect(pm.response.code).to.equal(401);","    console.log('✅ Correctly blocked — no token');","});"],"type": "text/javascript"}}],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {"raw": "{{baseUrl}}/api/terms","host": ["{{baseUrl}}"],"path": ["api","terms"]},
+						"description": "Admin routes require auth."
+					},
+					"response": []
+				},
+				{
+					"name": "❌ Invalid ID Format (400)",
+					"event": [{"listen": "test","script": {"exec": ["pm.test('Invalid ID rejected', () => {","    pm.expect(pm.response.code).to.equal(400);","    console.log('✅ Correctly rejected invalid ID format');","});"],"type": "text/javascript"}}],
+					"request": {
+						"auth": {"type": "bearer","bearer": [{"key": "token","value": "{{adminToken}}","type": "string"}]},
+						"method": "GET",
+						"header": [],
+						"url": {"raw": "{{baseUrl}}/api/terms/not-a-valid-id","host": ["{{baseUrl}}"],"path": ["api","terms","not-a-valid-id"]},
+						"description": "Non-ObjectId format should return 400."
+					},
+					"response": []
+				}
+			]
+		}
+	],
+	"variable": [
+		{"key": "baseUrl",       "value": "http://localhost:5005", "type": "string"},
+		{"key": "adminToken",    "value": "", "type": "string"},
+		{"key": "userToken",     "value": "", "type": "string"},
+		{"key": "userId",        "value": "", "type": "string"},
+		{"key": "termsV1Id",     "value": "", "type": "string"},
+		{"key": "termsV2Id",     "value": "", "type": "string"},
+		{"key": "activeTermsId", "value": "", "type": "string"}
+	]
+}

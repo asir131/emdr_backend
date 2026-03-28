@@ -31,6 +31,12 @@ export const signupSchema = z.object({
       ),
     
     confirmPassword: z.string({ required_error: 'Confirm password is required' }),
+
+    isAcceptPrivacyStatement: z
+      .boolean({ required_error: 'You must accept the Privacy Policy' })
+      .refine(val => val === true, {
+        message: 'You must accept the Privacy Policy to register',
+      }),
   }).refine((data) => data.password === data.confirmPassword, {
     message: 'Passwords do not match',
     path: ['confirmPassword'],

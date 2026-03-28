@@ -1,0 +1,287 @@
+{
+	"info": {
+		"_postman_id": "faq-system-001",
+		"name": "FAQ System — Full Test",
+		"description": "FAQ CRUD — Create, Get, Update, Reorder, Delete + Edge Cases.",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "── SETUP ────────────────────────────",
+			"item": [
+				{
+					"name": "0a. Admin Login",
+					"event": [{"listen": "test","script": {"exec": ["const r = pm.response.json();","if (pm.response.code === 200) {","    pm.collectionVariables.set('adminToken', r.data.session.accessToken);","    console.log('✅ Admin token saved');","    pm.test('Admin login OK', () => pm.expect(r.success).to.be.true);","}"],"type": "text/javascript"}}],
+					"request": {
+						"method": "POST",
+						"header": [{"key": "Content-Type","value": "application/json"}],
+						"body": {"mode": "raw","raw": "{\n  \"email\": \"admin@myemdr.com\",\n  \"password\": \"Admin@123456\"\n}"},
+						"url": {"raw": "{{baseUrl}}/api/auth/login","host": ["{{baseUrl}}"],"path": ["api","auth","login"]}
+					},
+					"response": []
+				},
+				{
+					"name": "0b. User Login",
+					"event": [{"listen": "test","script": {"exec": ["const r = pm.response.json();","if (pm.response.code === 200) {","    pm.collectionVariables.set('userToken', r.data.session.accessToken);","    console.log('✅ User token saved');","}"],"type": "text/javascript"}}],
+					"request": {
+						"method": "POST",
+						"header": [{"key": "Content-Type","value": "application/json"}],
+						"body": {"mode": "raw","raw": "{\n  \"email\": \"rakib@example.com\",\n  \"password\": \"Test@1234\"\n}"},
+						"url": {"raw": "{{baseUrl}}/api/auth/login","host": ["{{baseUrl}}"],"path": ["api","auth","login"]}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "── PUBLIC ───────────────────────────",
+			"item": [
+				{
+					"name": "1. Get All FAQs (Public)",
+					"event": [{"listen": "test","script": {"exec": ["const r = pm.response.json();","pm.test('FAQs returned', () => {","    pm.expect(pm.response.code).to.equal(200);","    pm.expect(r.data).to.be.an('array');","    if (r.data.length > 0) {","        pm.expect(r.data[0]).to.have.property('displayId');","        pm.expect(r.data[0]).to.have.property('question');","        pm.expect(r.data[0]).to.have.property('answer');","        console.log('✅ Total FAQs:', r.data.length);","        r.data.forEach(f => console.log(`  #${f.displayId} ${f.question}`));","    } else {","        console.log('ℹ️ No FAQs yet — create some first');","    }","});"],"type": "text/javascript"}}],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {"raw": "{{baseUrl}}/api/faq","host": ["{{baseUrl}}"],"path": ["api","faq"]},
+						"description": "No auth required. Returns all active FAQs ordered by `order` field with displayId (#1, #2...)."
+					},
+					"response": []
+				},
+				{
+					"name": "2. Get Single FAQ by ID (Public)",
+					"event": [{"listen": "test","script": {"exec": ["const r = pm.response.json();","pm.test('Single FAQ returned', () => {","    pm.expect(pm.response.code).to.equal(200);","    pm.expect(r.data.question).to.exist;","    pm.expect(r.data.answer).to.exist;","    console.log('✅ FAQ:', r.data.question);","});"],"type": "text/javascript"}}],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {"raw": "{{baseUrl}}/api/faq/{{faqId1}}","host": ["{{baseUrl}}"],"path": ["api","faq","{{faqId1}}"]},
+						"description": "⚠️ Set faqId1 variable after creating FAQs."
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "── ADMIN CRUD ───────────────────────",
+			"item": [
+				{
+					"name": "3. Create FAQ #1",
+					"event": [{"listen": "test","script": {"exec": ["const r = pm.response.json();","pm.test('FAQ #1 created', () => {","    pm.expect(pm.response.code).to.equal(201);","    pm.expect(r.success).to.be.true;","    pm.expect(r.data.question).to.exist;","    pm.expect(r.data.answer).to.exist;","    pm.collectionVariables.set('faqId1', r.data._id);","    console.log('✅ FAQ #1 created, ID:', r.data._id);","});"],"type": "text/javascript"}}],
+					"request": {
+						"auth": {"type": "bearer","bearer": [{"key": "token","value": "{{adminToken}}","type": "string"}]},
+						"method": "POST",
+						"header": [{"key": "Content-Type","value": "application/json"}],
+						"body": {"mode": "raw","raw": "{\n  \"question\": \"How do I reset my password?\",\n  \"answer\": \"Go to settings and click on reset password. You will receive an OTP on your registered email.\",\n  \"order\": 1\n}"},
+						"url": {"raw": "{{baseUrl}}/api/faq","host": ["{{baseUrl}}"],"path": ["api","faq"]},
+						"description": "Admin creates FAQ #1."
+					},
+					"response": []
+				},
+				{
+					"name": "4. Create FAQ #2",
+					"event": [{"listen": "test","script": {"exec": ["const r = pm.response.json();","pm.test('FAQ #2 created', () => {","    pm.expect(pm.response.code).to.equal(201);","    pm.collectionVariables.set('faqId2', r.data._id);","    console.log('✅ FAQ #2 created, ID:', r.data._id);","});"],"type": "text/javascript"}}],
+					"request": {
+						"auth": {"type": "bearer","bearer": [{"key": "token","value": "{{adminToken}}","type": "string"}]},
+						"method": "POST",
+						"header": [{"key": "Content-Type","value": "application/json"}],
+						"body": {"mode": "raw","raw": "{\n  \"question\": \"Can I upgrade my subscription?\",\n  \"answer\": \"Yes, you can upgrade anytime from the billing page. Changes take effect immediately.\",\n  \"order\": 2\n}"},
+						"url": {"raw": "{{baseUrl}}/api/faq","host": ["{{baseUrl}}"],"path": ["api","faq"]}
+					},
+					"response": []
+				},
+				{
+					"name": "5. Create FAQ #3",
+					"event": [{"listen": "test","script": {"exec": ["const r = pm.response.json();","pm.test('FAQ #3 created', () => {","    pm.expect(pm.response.code).to.equal(201);","    pm.collectionVariables.set('faqId3', r.data._id);","    console.log('✅ FAQ #3 created, ID:', r.data._id);","});"],"type": "text/javascript"}}],
+					"request": {
+						"auth": {"type": "bearer","bearer": [{"key": "token","value": "{{adminToken}}","type": "string"}]},
+						"method": "POST",
+						"header": [{"key": "Content-Type","value": "application/json"}],
+						"body": {"mode": "raw","raw": "{\n  \"question\": \"Where can I view my reports?\",\n  \"answer\": \"Reports are available in the dashboard overview tab under the Analytics section.\",\n  \"order\": 3\n}"},
+						"url": {"raw": "{{baseUrl}}/api/faq","host": ["{{baseUrl}}"],"path": ["api","faq"]}
+					},
+					"response": []
+				},
+				{
+					"name": "6. Create FAQ #4 (auto order)",
+					"event": [{"listen": "test","script": {"exec": ["const r = pm.response.json();","pm.test('FAQ #4 created with auto order', () => {","    pm.expect(pm.response.code).to.equal(201);","    pm.collectionVariables.set('faqId4', r.data._id);","    console.log('✅ FAQ #4 auto order:', r.data.order);","});"],"type": "text/javascript"}}],
+					"request": {
+						"auth": {"type": "bearer","bearer": [{"key": "token","value": "{{adminToken}}","type": "string"}]},
+						"method": "POST",
+						"header": [{"key": "Content-Type","value": "application/json"}],
+						"body": {"mode": "raw","raw": "{\n  \"question\": \"How do I contact support?\",\n  \"answer\": \"You can reach our support team via email at support@myemdr.com or through the in-app chat.\"\n}"},
+						"url": {"raw": "{{baseUrl}}/api/faq","host": ["{{baseUrl}}"],"path": ["api","faq"]},
+						"description": "No order provided — auto-assigned as last."
+					},
+					"response": []
+				},
+				{
+					"name": "7. Get All FAQs (Admin — includes inactive)",
+					"event": [{"listen": "test","script": {"exec": ["const r = pm.response.json();","pm.test('Admin FAQ list returned', () => {","    pm.expect(pm.response.code).to.equal(200);","    pm.expect(r.data).to.be.an('array');","    console.log('✅ Total FAQs (admin):', r.data.length);","    r.data.forEach(f => console.log(`  #${f.displayId} [${f.isActive ? 'active' : 'hidden'}] ${f.question}`));","});"],"type": "text/javascript"}}],
+					"request": {
+						"auth": {"type": "bearer","bearer": [{"key": "token","value": "{{adminToken}}","type": "string"}]},
+						"method": "GET",
+						"header": [],
+						"url": {"raw": "{{baseUrl}}/api/faq/admin/all","host": ["{{baseUrl}}"],"path": ["api","faq","admin","all"]},
+						"description": "Admin sees all FAQs including inactive ones."
+					},
+					"response": []
+				},
+				{
+					"name": "8. Update FAQ (PATCH)",
+					"event": [{"listen": "test","script": {"exec": ["const r = pm.response.json();","pm.test('FAQ updated', () => {","    pm.expect(pm.response.code).to.equal(200);","    pm.expect(r.data.answer).to.include('Profile Settings');","    console.log('✅ FAQ updated:', r.data.question);","});"],"type": "text/javascript"}}],
+					"request": {
+						"auth": {"type": "bearer","bearer": [{"key": "token","value": "{{adminToken}}","type": "string"}]},
+						"method": "PATCH",
+						"header": [{"key": "Content-Type","value": "application/json"}],
+						"body": {"mode": "raw","raw": "{\n  \"answer\": \"Go to Profile Settings > Security > Reset Password. An OTP will be sent to your email.\"\n}"},
+						"url": {"raw": "{{baseUrl}}/api/faq/{{faqId1}}","host": ["{{baseUrl}}"],"path": ["api","faq","{{faqId1}}"]},
+						"description": "Partial update — only answer changed."
+					},
+					"response": []
+				},
+				{
+					"name": "9. Hide FAQ (isActive: false)",
+					"event": [{"listen": "test","script": {"exec": ["const r = pm.response.json();","pm.test('FAQ hidden', () => {","    pm.expect(pm.response.code).to.equal(200);","    pm.expect(r.data.isActive).to.be.false;","    console.log('✅ FAQ hidden — will not appear in public list');","});"],"type": "text/javascript"}}],
+					"request": {
+						"auth": {"type": "bearer","bearer": [{"key": "token","value": "{{adminToken}}","type": "string"}]},
+						"method": "PATCH",
+						"header": [{"key": "Content-Type","value": "application/json"}],
+						"body": {"mode": "raw","raw": "{\n  \"isActive\": false\n}"},
+						"url": {"raw": "{{baseUrl}}/api/faq/{{faqId4}}","host": ["{{baseUrl}}"],"path": ["api","faq","{{faqId4}}"]},
+						"description": "Hide FAQ without deleting — won't appear in public list."
+					},
+					"response": []
+				},
+				{
+					"name": "10. Show FAQ Again (isActive: true)",
+					"event": [{"listen": "test","script": {"exec": ["pm.test('FAQ restored', () => {","    pm.expect(pm.response.code).to.equal(200);","    pm.expect(pm.response.json().data.isActive).to.be.true;","    console.log('✅ FAQ restored to active');","});"],"type": "text/javascript"}}],
+					"request": {
+						"auth": {"type": "bearer","bearer": [{"key": "token","value": "{{adminToken}}","type": "string"}]},
+						"method": "PATCH",
+						"header": [{"key": "Content-Type","value": "application/json"}],
+						"body": {"mode": "raw","raw": "{\n  \"isActive\": true\n}"},
+						"url": {"raw": "{{baseUrl}}/api/faq/{{faqId4}}","host": ["{{baseUrl}}"],"path": ["api","faq","{{faqId4}}"]},
+						"description": "Restore hidden FAQ."
+					},
+					"response": []
+				},
+				{
+					"name": "11. Reorder FAQs (Drag & Drop)",
+					"event": [{"listen": "test","script": {"exec": ["const r = pm.response.json();","pm.test('FAQs reordered', () => {","    pm.expect(pm.response.code).to.equal(200);","    pm.expect(r.data.updated).to.equal(4);","    console.log('✅ Reordered', r.data.updated, 'FAQs');","});"],"type": "text/javascript"}}],
+					"request": {
+						"auth": {"type": "bearer","bearer": [{"key": "token","value": "{{adminToken}}","type": "string"}]},
+						"method": "PATCH",
+						"header": [{"key": "Content-Type","value": "application/json"}],
+						"body": {"mode": "raw","raw": "{\n  \"items\": [\n    { \"id\": \"{{faqId1}}\", \"order\": 3 },\n    { \"id\": \"{{faqId2}}\", \"order\": 1 },\n    { \"id\": \"{{faqId3}}\", \"order\": 2 },\n    { \"id\": \"{{faqId4}}\", \"order\": 4 }\n  ]\n}"},
+						"url": {"raw": "{{baseUrl}}/api/faq/reorder","host": ["{{baseUrl}}"],"path": ["api","faq","reorder"]},
+						"description": "Bulk reorder — simulates drag & drop. Send all items with new order values."
+					},
+					"response": []
+				},
+				{
+					"name": "12. Verify New Order (Public)",
+					"event": [{"listen": "test","script": {"exec": ["const r = pm.response.json();","pm.test('New order verified', () => {","    pm.expect(pm.response.code).to.equal(200);","    console.log('✅ FAQ order after reorder:');","    r.data.forEach(f => console.log(`  #${f.displayId} (order:${f.order}) ${f.question}`));","});"],"type": "text/javascript"}}],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {"raw": "{{baseUrl}}/api/faq","host": ["{{baseUrl}}"],"path": ["api","faq"]},
+						"description": "Verify the new order is reflected in public list."
+					},
+					"response": []
+				},
+				{
+					"name": "13. Delete FAQ",
+					"event": [{"listen": "test","script": {"exec": ["pm.test('FAQ deleted', () => {","    pm.expect(pm.response.code).to.equal(200);","    pm.expect(pm.response.json().data.message).to.include('deleted');","    console.log('✅ FAQ deleted successfully');","});"],"type": "text/javascript"}}],
+					"request": {
+						"auth": {"type": "bearer","bearer": [{"key": "token","value": "{{adminToken}}","type": "string"}]},
+						"method": "DELETE",
+						"header": [],
+						"url": {"raw": "{{baseUrl}}/api/faq/{{faqId4}}","host": ["{{baseUrl}}"],"path": ["api","faq","{{faqId4}}"]},
+						"description": "Permanently delete a FAQ."
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "── EDGE CASES ───────────────────────",
+			"item": [
+				{
+					"name": "❌ User Tries Admin Route (403)",
+					"event": [{"listen": "test","script": {"exec": ["pm.test('Non-admin blocked', () => {","    pm.expect(pm.response.code).to.equal(403);","    console.log('✅ Correctly blocked — not admin');","});"],"type": "text/javascript"}}],
+					"request": {
+						"auth": {"type": "bearer","bearer": [{"key": "token","value": "{{userToken}}","type": "string"}]},
+						"method": "POST",
+						"header": [{"key": "Content-Type","value": "application/json"}],
+						"body": {"mode": "raw","raw": "{\n  \"question\": \"Hack attempt\",\n  \"answer\": \"Should be blocked\"\n}"},
+						"url": {"raw": "{{baseUrl}}/api/faq","host": ["{{baseUrl}}"],"path": ["api","faq"]}
+					},
+					"response": []
+				},
+				{
+					"name": "❌ No Token (401)",
+					"event": [{"listen": "test","script": {"exec": ["pm.test('Blocked without token', () => {","    pm.expect(pm.response.code).to.equal(401);","    console.log('✅ Correctly blocked — no token');","});"],"type": "text/javascript"}}],
+					"request": {
+						"method": "POST",
+						"header": [{"key": "Content-Type","value": "application/json"}],
+						"body": {"mode": "raw","raw": "{\n  \"question\": \"Test\",\n  \"answer\": \"Test\"\n}"},
+						"url": {"raw": "{{baseUrl}}/api/faq","host": ["{{baseUrl}}"],"path": ["api","faq"]}
+					},
+					"response": []
+				},
+				{
+					"name": "❌ Missing Required Fields (400)",
+					"event": [{"listen": "test","script": {"exec": ["pm.test('Missing fields rejected', () => {","    pm.expect(pm.response.code).to.equal(400);","    console.log('✅ Correctly rejected — missing question/answer');","});"],"type": "text/javascript"}}],
+					"request": {
+						"auth": {"type": "bearer","bearer": [{"key": "token","value": "{{adminToken}}","type": "string"}]},
+						"method": "POST",
+						"header": [{"key": "Content-Type","value": "application/json"}],
+						"body": {"mode": "raw","raw": "{\n  \"question\": \"Only question, no answer\"\n}"},
+						"url": {"raw": "{{baseUrl}}/api/faq","host": ["{{baseUrl}}"],"path": ["api","faq"]}
+					},
+					"response": []
+				},
+				{
+					"name": "❌ Invalid ID Format (400)",
+					"event": [{"listen": "test","script": {"exec": ["pm.test('Invalid ID rejected', () => {","    pm.expect(pm.response.code).to.equal(400);","    console.log('✅ Correctly rejected invalid ID');","});"],"type": "text/javascript"}}],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {"raw": "{{baseUrl}}/api/faq/not-a-valid-id","host": ["{{baseUrl}}"],"path": ["api","faq","not-a-valid-id"]}
+					},
+					"response": []
+				},
+				{
+					"name": "❌ Non-existent FAQ (404)",
+					"event": [{"listen": "test","script": {"exec": ["pm.test('Non-existent FAQ returns 404', () => {","    pm.expect(pm.response.code).to.equal(404);","    console.log('✅ Correctly returned 404');","});"],"type": "text/javascript"}}],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {"raw": "{{baseUrl}}/api/faq/000000000000000000000000","host": ["{{baseUrl}}"],"path": ["api","faq","000000000000000000000000"]}
+					},
+					"response": []
+				},
+				{
+					"name": "❌ Question Too Short (400)",
+					"event": [{"listen": "test","script": {"exec": ["pm.test('Short question rejected', () => {","    pm.expect(pm.response.code).to.equal(400);","    console.log('✅ Correctly rejected — question too short');","});"],"type": "text/javascript"}}],
+					"request": {
+						"auth": {"type": "bearer","bearer": [{"key": "token","value": "{{adminToken}}","type": "string"}]},
+						"method": "POST",
+						"header": [{"key": "Content-Type","value": "application/json"}],
+						"body": {"mode": "raw","raw": "{\n  \"question\": \"Hi?\",\n  \"answer\": \"This answer is long enough to pass validation.\"\n}"},
+						"url": {"raw": "{{baseUrl}}/api/faq","host": ["{{baseUrl}}"],"path": ["api","faq"]}
+					},
+					"response": []
+				}
+			]
+		}
+	],
+	"variable": [
+		{"key": "baseUrl",    "value": "http://localhost:5005", "type": "string"},
+		{"key": "adminToken", "value": "", "type": "string"},
+		{"key": "userToken",  "value": "", "type": "string"},
+		{"key": "faqId1",     "value": "", "type": "string"},
+		{"key": "faqId2",     "value": "", "type": "string"},
+		{"key": "faqId3",     "value": "", "type": "string"},
+		{"key": "faqId4",     "value": "", "type": "string"}
+	]
+}

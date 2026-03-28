@@ -1,0 +1,265 @@
+{
+	"info": {
+		"_postman_id": "privacy-policy-001",
+		"name": "Privacy Policy — Full Test",
+		"description": "Privacy Policy CRUD — Create, Get, Update (PATCH/PUT), Activate, Delete + Edge Cases.",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "── SETUP ────────────────────────────",
+			"item": [
+				{
+					"name": "0a. Admin Login",
+					"event": [{"listen": "test","script": {"exec": ["const r = pm.response.json();","if (pm.response.code === 200) {","    pm.collectionVariables.set('adminToken', r.data.session.accessToken);","    console.log('✅ Admin token saved');","    pm.test('Admin login OK', () => pm.expect(r.success).to.be.true);","}"],"type": "text/javascript"}}],
+					"request": {
+						"method": "POST",
+						"header": [{"key": "Content-Type","value": "application/json"}],
+						"body": {"mode": "raw","raw": "{\n  \"email\": \"admin@example.com\",\n  \"password\": \"Admin@1234\"\n}"},
+						"url": {"raw": "{{baseUrl}}/api/auth/login","host": ["{{baseUrl}}"],"path": ["api","auth","login"]}
+					},
+					"response": []
+				},
+				{
+					"name": "0b. User Login",
+					"event": [{"listen": "test","script": {"exec": ["const r = pm.response.json();","if (pm.response.code === 200) {","    pm.collectionVariables.set('userToken', r.data.session.accessToken);","    console.log('✅ User token saved');","    pm.test('User login OK', () => pm.expect(r.success).to.be.true);","}"],"type": "text/javascript"}}],
+					"request": {
+						"method": "POST",
+						"header": [{"key": "Content-Type","value": "application/json"}],
+						"body": {"mode": "raw","raw": "{\n  \"email\": \"rakib@example.com\",\n  \"password\": \"Test@1234\"\n}"},
+						"url": {"raw": "{{baseUrl}}/api/auth/login","host": ["{{baseUrl}}"],"path": ["api","auth","login"]}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "── PUBLIC ───────────────────────────",
+			"item": [
+				{
+					"name": "1. Get Active Privacy Policy (Public)",
+					"event": [{"listen": "test","script": {"exec": ["const r = pm.response.json();","pm.test('Active policy returned', () => {","    pm.expect(pm.response.code).to.equal(200);","    pm.expect(r.success).to.be.true;","    pm.expect(r.data.overview).to.exist;","    pm.expect(r.data.sections).to.be.an('array');","    pm.expect(r.data.version).to.exist;","    pm.expect(r.data.effectiveDate).to.exist;","    pm.collectionVariables.set('activePolicyId', r.data._id);","    console.log('✅ Active policy version:', r.data.version);","    console.log('📅 Effective:', r.data.effectiveDate);","    console.log('📝 Overview:', r.data.overview.substring(0, 60) + '...');","});"],"type": "text/javascript"}}],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {"raw": "{{baseUrl}}/api/privacy/active","host": ["{{baseUrl}}"],"path": ["api","privacy","active"]},
+						"description": "No auth required. Returns cached active Privacy Policy."
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "── ADMIN CRUD ───────────────────────",
+			"item": [
+				{
+					"name": "2. Create Privacy Policy v1.0",
+					"event": [{"listen": "test","script": {"exec": ["const r = pm.response.json();","pm.test('Privacy Policy v1.0 created', () => {","    pm.expect(pm.response.code).to.equal(201);","    pm.expect(r.success).to.be.true;","    pm.expect(r.data.version).to.equal('1.0');","    pm.expect(r.data.overview).to.exist;","    pm.expect(r.data.effectiveDate).to.exist;","    pm.expect(r.data.isActive).to.be.true;","    pm.collectionVariables.set('policyV1Id', r.data._id);","    pm.collectionVariables.set('activePolicyId', r.data._id);","    console.log('✅ Privacy Policy v1.0 created, ID:', r.data._id);","    console.log('📝 Sections:', r.data.sections.length);","});"],"type": "text/javascript"}}],
+					"request": {
+						"auth": {"type": "bearer","bearer": [{"key": "token","value": "{{adminToken}}","type": "string"}]},
+						"method": "POST",
+						"header": [{"key": "Content-Type","value": "application/json"}],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"version\": \"1.0\",\n  \"overview\": \"At MY EMDR, we take your privacy seriously. This policy explains how we collect, use, and protect your personal information.\",\n  \"effectiveDate\": \"2026-01-01T00:00:00.000Z\",\n  \"changelog\": \"Initial version of Privacy Policy.\",\n  \"contactEmail\": \"privacy@myemdr.com\",\n  \"contactName\": \"MY EMDR Privacy Team\",\n  \"sections\": [\n    {\n      \"order\": 1,\n      \"title\": \"Data We Collect\",\n      \"content\": \"We collect information you provide directly to us, such as when you create an account, update your profile, or communicate with us.\",\n      \"bullets\": [\n        \"Name and email address\",\n        \"Profile information\",\n        \"Usage data and device information\"\n      ]\n    },\n    {\n      \"order\": 2,\n      \"title\": \"How We Use Data\",\n      \"content\": \"Your data is used to provide, maintain, and improve our services, as well as to protect our users and comply with legal obligations.\"\n    },\n    {\n      \"order\": 3,\n      \"title\": \"Third-Party Sharing\",\n      \"content\": \"We do not sell your personal data. We only share information with third parties when necessary to provide our services or required by law.\"\n    }\n  ]\n}"
+						},
+						"url": {"raw": "{{baseUrl}}/api/privacy","host": ["{{baseUrl}}"],"path": ["api","privacy"]},
+						"description": "Admin creates Privacy Policy v1.0 with overview, sections, effectiveDate, changelog."
+					},
+					"response": []
+				},
+				{
+					"name": "3. Create Privacy Policy v2.0 (auto-activates)",
+					"event": [{"listen": "test","script": {"exec": ["const r = pm.response.json();","pm.test('Privacy Policy v2.0 created and active', () => {","    pm.expect(pm.response.code).to.equal(201);","    pm.expect(r.data.version).to.equal('2.0');","    pm.expect(r.data.isActive).to.be.true;","    pm.collectionVariables.set('policyV2Id', r.data._id);","    pm.collectionVariables.set('activePolicyId', r.data._id);","    console.log('✅ v2.0 created and auto-activated');","    console.log('📝 Changelog:', r.data.changelog);","});"],"type": "text/javascript"}}],
+					"request": {
+						"auth": {"type": "bearer","bearer": [{"key": "token","value": "{{adminToken}}","type": "string"}]},
+						"method": "POST",
+						"header": [{"key": "Content-Type","value": "application/json"}],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"version\": \"2.0\",\n  \"overview\": \"At MY EMDR, we are committed to protecting your privacy. This updated policy reflects our enhanced data protection practices.\",\n  \"effectiveDate\": \"2026-04-01T00:00:00.000Z\",\n  \"changelog\": \"Added cookie policy section. Updated data retention period. Clarified third-party sharing rules.\",\n  \"contactEmail\": \"privacy@myemdr.com\",\n  \"contactName\": \"MY EMDR Privacy Team\",\n  \"sections\": [\n    {\n      \"order\": 1,\n      \"title\": \"Data We Collect\",\n      \"content\": \"We collect information you provide directly to us and data generated through your use of our services.\",\n      \"bullets\": [\n        \"Name, email, and contact details\",\n        \"Session and therapy data\",\n        \"Device and usage information\",\n        \"Cookie and tracking data\"\n      ]\n    },\n    {\n      \"order\": 2,\n      \"title\": \"How We Use Data\",\n      \"content\": \"Your data is used to provide, maintain, and improve our services.\",\n      \"bullets\": [\n        \"Deliver personalized therapy sessions\",\n        \"Improve platform performance\",\n        \"Comply with legal obligations\"\n      ]\n    },\n    {\n      \"order\": 3,\n      \"title\": \"Third-Party Sharing\",\n      \"content\": \"We do not sell your personal data. Sharing only occurs when necessary for service delivery or legally required.\"\n    },\n    {\n      \"order\": 4,\n      \"title\": \"Cookie Policy\",\n      \"content\": \"We use cookies to enhance your experience. You can manage cookie preferences in your browser settings.\"\n    }\n  ]\n}"
+						},
+						"url": {"raw": "{{baseUrl}}/api/privacy","host": ["{{baseUrl}}"],"path": ["api","privacy"]},
+						"description": "Creates v2.0 — automatically deactivates v1.0."
+					},
+					"response": []
+				},
+				{
+					"name": "4. Get All Versions (History)",
+					"event": [{"listen": "test","script": {"exec": ["const r = pm.response.json();","pm.test('Version history returned', () => {","    pm.expect(pm.response.code).to.equal(200);","    pm.expect(r.data).to.be.an('array');","    console.log('✅ Total versions:', r.data.length);","    r.data.forEach(v => console.log(`  - v${v.version} | active: ${v.isActive} | effective: ${v.effectiveDate}`));","});"],"type": "text/javascript"}}],
+					"request": {
+						"auth": {"type": "bearer","bearer": [{"key": "token","value": "{{adminToken}}","type": "string"}]},
+						"method": "GET",
+						"header": [],
+						"url": {"raw": "{{baseUrl}}/api/privacy","host": ["{{baseUrl}}"],"path": ["api","privacy"]},
+						"description": "Returns all versions with version, overview, effectiveDate, changelog, isActive."
+					},
+					"response": []
+				},
+				{
+					"name": "5. Get Single Version by ID",
+					"event": [{"listen": "test","script": {"exec": ["const r = pm.response.json();","pm.test('Single version returned', () => {","    pm.expect(pm.response.code).to.equal(200);","    pm.expect(r.data.overview).to.exist;","    pm.expect(r.data.sections).to.be.an('array');","    pm.expect(r.data.changelog).to.exist;","    console.log('✅ Version:', r.data.version);","    console.log('📝 Sections:', r.data.sections.length);","});"],"type": "text/javascript"}}],
+					"request": {
+						"auth": {"type": "bearer","bearer": [{"key": "token","value": "{{adminToken}}","type": "string"}]},
+						"method": "GET",
+						"header": [],
+						"url": {"raw": "{{baseUrl}}/api/privacy/{{policyV2Id}}","host": ["{{baseUrl}}"],"path": ["api","privacy","{{policyV2Id}}"]},
+						"description": "Get full details of a specific version."
+					},
+					"response": []
+				},
+				{
+					"name": "6. PATCH — Partial Update",
+					"event": [{"listen": "test","script": {"exec": ["const r = pm.response.json();","pm.test('Partial update successful', () => {","    pm.expect(pm.response.code).to.equal(200);","    pm.expect(r.data.contactEmail).to.equal('legal@myemdr.com');","    console.log('✅ Contact email updated');","});"],"type": "text/javascript"}}],
+					"request": {
+						"auth": {"type": "bearer","bearer": [{"key": "token","value": "{{adminToken}}","type": "string"}]},
+						"method": "PATCH",
+						"header": [{"key": "Content-Type","value": "application/json"}],
+						"body": {"mode": "raw","raw": "{\n  \"contactEmail\": \"legal@myemdr.com\",\n  \"changelog\": \"Updated contact email to legal team address.\"\n}"},
+						"url": {"raw": "{{baseUrl}}/api/privacy/{{policyV2Id}}","host": ["{{baseUrl}}"],"path": ["api","privacy","{{policyV2Id}}"]},
+						"description": "Partial update — only send fields you want to change."
+					},
+					"response": []
+				},
+				{
+					"name": "7. PUT — Full Replace",
+					"event": [{"listen": "test","script": {"exec": ["const r = pm.response.json();","pm.test('Full replace successful', () => {","    pm.expect(pm.response.code).to.equal(200);","    pm.expect(r.data.version).to.equal('2.1');","    pm.expect(r.data.sections.length).to.equal(3);","    console.log('✅ Full replace done — version:', r.data.version);","});"],"type": "text/javascript"}}],
+					"request": {
+						"auth": {"type": "bearer","bearer": [{"key": "token","value": "{{adminToken}}","type": "string"}]},
+						"method": "PUT",
+						"header": [{"key": "Content-Type","value": "application/json"}],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"version\": \"2.1\",\n  \"overview\": \"At MY EMDR, we are fully committed to protecting your privacy and personal data.\",\n  \"effectiveDate\": \"2026-05-01T00:00:00.000Z\",\n  \"changelog\": \"Minor revision — clarified data usage policy and updated overview.\",\n  \"contactEmail\": \"privacy@myemdr.com\",\n  \"contactName\": \"MY EMDR Privacy Team\",\n  \"sections\": [\n    {\n      \"order\": 1,\n      \"title\": \"Data We Collect\",\n      \"content\": \"We collect data you provide and data generated through service usage.\"\n    },\n    {\n      \"order\": 2,\n      \"title\": \"How We Use Data\",\n      \"content\": \"Data is used to deliver and improve our services, and to comply with legal requirements.\"\n    },\n    {\n      \"order\": 3,\n      \"title\": \"Third-Party Sharing\",\n      \"content\": \"We never sell your data. Sharing only occurs when required for service delivery.\"\n    }\n  ]\n}"
+						},
+						"url": {"raw": "{{baseUrl}}/api/privacy/{{policyV2Id}}","host": ["{{baseUrl}}"],"path": ["api","privacy","{{policyV2Id}}"]},
+						"description": "Full replace — all fields required. Replaces entire document."
+					},
+					"response": []
+				},
+				{
+					"name": "8. Activate v1.0 (Rollback)",
+					"event": [{"listen": "test","script": {"exec": ["const r = pm.response.json();","pm.test('v1.0 activated (rollback)', () => {","    pm.expect(pm.response.code).to.equal(200);","    pm.expect(r.data.isActive).to.be.true;","    console.log('✅ Rolled back to v1.0');","});"],"type": "text/javascript"}}],
+					"request": {
+						"auth": {"type": "bearer","bearer": [{"key": "token","value": "{{adminToken}}","type": "string"}]},
+						"method": "PATCH",
+						"header": [],
+						"url": {"raw": "{{baseUrl}}/api/privacy/{{policyV1Id}}/activate","host": ["{{baseUrl}}"],"path": ["api","privacy","{{policyV1Id}}","activate"]},
+						"description": "Rollback to v1.0 — deactivates v2.x, activates v1.0."
+					},
+					"response": []
+				},
+				{
+					"name": "9. Re-activate v2.x",
+					"event": [{"listen": "test","script": {"exec": ["pm.test('v2.x re-activated', () => {","    pm.expect(pm.response.code).to.equal(200);","    console.log('✅ v2.x is active again');","});"],"type": "text/javascript"}}],
+					"request": {
+						"auth": {"type": "bearer","bearer": [{"key": "token","value": "{{adminToken}}","type": "string"}]},
+						"method": "PATCH",
+						"header": [],
+						"url": {"raw": "{{baseUrl}}/api/privacy/{{policyV2Id}}/activate","host": ["{{baseUrl}}"],"path": ["api","privacy","{{policyV2Id}}","activate"]},
+						"description": "Re-activate v2.x for further testing."
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "── DELETE & EDGE CASES ──────────────",
+			"item": [
+				{
+					"name": "10. ❌ Delete Active Policy (Should Fail)",
+					"event": [{"listen": "test","script": {"exec": ["pm.test('Cannot delete active policy', () => {","    pm.expect(pm.response.code).to.equal(400);","    console.log('✅ Correctly blocked — cannot delete active version');","});"],"type": "text/javascript"}}],
+					"request": {
+						"auth": {"type": "bearer","bearer": [{"key": "token","value": "{{adminToken}}","type": "string"}]},
+						"method": "DELETE",
+						"header": [],
+						"url": {"raw": "{{baseUrl}}/api/privacy/{{policyV2Id}}","host": ["{{baseUrl}}"],"path": ["api","privacy","{{policyV2Id}}"]},
+						"description": "Active version cannot be deleted."
+					},
+					"response": []
+				},
+				{
+					"name": "11. ✅ Delete Inactive v1.0",
+					"event": [{"listen": "test","script": {"exec": ["pm.test('Inactive version deleted', () => {","    pm.expect(pm.response.code).to.equal(200);","    pm.expect(pm.response.json().data.message).to.include('deleted');","    console.log('✅ v1.0 deleted successfully');","});"],"type": "text/javascript"}}],
+					"request": {
+						"auth": {"type": "bearer","bearer": [{"key": "token","value": "{{adminToken}}","type": "string"}]},
+						"method": "DELETE",
+						"header": [],
+						"url": {"raw": "{{baseUrl}}/api/privacy/{{policyV1Id}}","host": ["{{baseUrl}}"],"path": ["api","privacy","{{policyV1Id}}"]},
+						"description": "Deletes inactive v1.0."
+					},
+					"response": []
+				},
+				{
+					"name": "❌ User Tries Admin Route (403)",
+					"event": [{"listen": "test","script": {"exec": ["pm.test('Non-admin blocked', () => {","    pm.expect(pm.response.code).to.equal(403);","    console.log('✅ Correctly blocked — not admin');","});"],"type": "text/javascript"}}],
+					"request": {
+						"auth": {"type": "bearer","bearer": [{"key": "token","value": "{{userToken}}","type": "string"}]},
+						"method": "POST",
+						"header": [{"key": "Content-Type","value": "application/json"}],
+						"body": {"mode": "raw","raw": "{\n  \"version\": \"hack\",\n  \"overview\": \"test\",\n  \"sections\": [],\n  \"contactEmail\": \"x@x.com\",\n  \"contactName\": \"x\"\n}"},
+						"url": {"raw": "{{baseUrl}}/api/privacy","host": ["{{baseUrl}}"],"path": ["api","privacy"]},
+						"description": "Regular user cannot create Privacy Policy."
+					},
+					"response": []
+				},
+				{
+					"name": "❌ No Token (401)",
+					"event": [{"listen": "test","script": {"exec": ["pm.test('Blocked without token', () => {","    pm.expect(pm.response.code).to.equal(401);","    console.log('✅ Correctly blocked — no token');","});"],"type": "text/javascript"}}],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {"raw": "{{baseUrl}}/api/privacy","host": ["{{baseUrl}}"],"path": ["api","privacy"]},
+						"description": "Admin routes require auth."
+					},
+					"response": []
+				},
+				{
+					"name": "❌ Invalid ID Format (400)",
+					"event": [{"listen": "test","script": {"exec": ["pm.test('Invalid ID rejected', () => {","    pm.expect(pm.response.code).to.equal(400);","    console.log('✅ Correctly rejected invalid ID format');","});"],"type": "text/javascript"}}],
+					"request": {
+						"auth": {"type": "bearer","bearer": [{"key": "token","value": "{{adminToken}}","type": "string"}]},
+						"method": "GET",
+						"header": [],
+						"url": {"raw": "{{baseUrl}}/api/privacy/not-a-valid-id","host": ["{{baseUrl}}"],"path": ["api","privacy","not-a-valid-id"]},
+						"description": "Non-ObjectId format returns 400."
+					},
+					"response": []
+				},
+				{
+					"name": "❌ Missing Required Fields (400)",
+					"event": [{"listen": "test","script": {"exec": ["pm.test('Missing fields rejected', () => {","    pm.expect(pm.response.code).to.equal(400);","    console.log('✅ Correctly rejected — missing required fields');","});"],"type": "text/javascript"}}],
+					"request": {
+						"auth": {"type": "bearer","bearer": [{"key": "token","value": "{{adminToken}}","type": "string"}]},
+						"method": "POST",
+						"header": [{"key": "Content-Type","value": "application/json"}],
+						"body": {"mode": "raw","raw": "{\n  \"version\": \"3.0\"\n}"},
+						"url": {"raw": "{{baseUrl}}/api/privacy","host": ["{{baseUrl}}"],"path": ["api","privacy"]},
+						"description": "Missing overview, sections, contactEmail, contactName."
+					},
+					"response": []
+				},
+				{
+					"name": "❌ Non-existent ID (404)",
+					"event": [{"listen": "test","script": {"exec": ["pm.test('Non-existent returns 404', () => {","    pm.expect(pm.response.code).to.equal(404);","    console.log('✅ Correctly returned 404');","});"],"type": "text/javascript"}}],
+					"request": {
+						"auth": {"type": "bearer","bearer": [{"key": "token","value": "{{adminToken}}","type": "string"}]},
+						"method": "GET",
+						"header": [],
+						"url": {"raw": "{{baseUrl}}/api/privacy/000000000000000000000000","host": ["{{baseUrl}}"],"path": ["api","privacy","000000000000000000000000"]},
+						"description": "Valid format but non-existent ID."
+					},
+					"response": []
+				}
+			]
+		}
+	],
+	"variable": [
+		{"key": "baseUrl",        "value": "http://localhost:5005", "type": "string"},
+		{"key": "adminToken",     "value": "", "type": "string"},
+		{"key": "userToken",      "value": "", "type": "string"},
+		{"key": "policyV1Id",     "value": "", "type": "string"},
+		{"key": "policyV2Id",     "value": "", "type": "string"},
+		{"key": "activePolicyId", "value": "", "type": "string"}
+	]
+}

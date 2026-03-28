@@ -4,8 +4,8 @@ import { authService } from './auth.service';
 export class AuthController {
   async signup(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const { firstName, lastName, email, password } = req.body;
-      const result = await authService.signup({ firstName, lastName, email, password });
+      const { firstName, lastName, email, password, isAcceptPrivacyStatement } = req.body;
+      const result = await authService.signup({ firstName, lastName, email, password, isAcceptPrivacyStatement });
       res.status(201).json({ success: true, data: result, meta: { timestamp: new Date().toISOString() } });
     } catch (error) {
       next(error);
