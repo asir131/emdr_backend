@@ -2,8 +2,7 @@ import mongoose, { Schema, Document } from 'mongoose';
 
 export interface ISection {
   title: string;
-  content: string;
-  bullets?: string[];
+  content: string; // Rich-text (HTML) content from the admin toolbar
   order: number;
 }
 
@@ -26,7 +25,6 @@ const sectionSchema = new Schema<ISection>(
   {
     title:   { type: String, required: true, trim: true, maxlength: 100 },
     content: { type: String, required: true, trim: true },
-    bullets: [{ type: String, trim: true }],
     order:   { type: Number, required: true },
   },
   { _id: false }
@@ -41,7 +39,7 @@ const termsSchema = new Schema<ITerms>(
     sections:      { type: [sectionSchema], required: true },
     contactEmail:  { type: String, required: true, trim: true, lowercase: true },
     contactName:   { type: String, required: true, trim: true },
-    isActive:      { type: Boolean, default: true, index: true },
+    isActive:      { type: Boolean, default: true },
     createdBy:     { type: Schema.Types.ObjectId, ref: 'User', required: true },
     updatedBy:     { type: Schema.Types.ObjectId, ref: 'User' },
   },

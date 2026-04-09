@@ -72,7 +72,7 @@ export const faqService = {
     const faq = await FAQ.findByIdAndUpdate(
       id,
       { ...data, updatedBy: userId },
-      { new: true, runValidators: true }
+      { returnDocument: 'after', runValidators: true }
     ).lean();
 
     if (!faq) throw ApiError.notFound('FAQ not found');

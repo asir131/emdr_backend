@@ -15,7 +15,7 @@ export interface TokenPair {
 
 export const generateAccessToken = (payload: JWTPayload): string => {
   return jwt.sign(payload, env.JWT_SECRET, {
-    expiresIn: '15m',
+    expiresIn: '1d',
   });
 };
 
@@ -28,7 +28,7 @@ export const generateRefreshToken = (payload: JWTPayload): string => {
 export const generateTokenPair = (payload: JWTPayload): TokenPair => {
   const accessToken = generateAccessToken(payload);
   const refreshToken = generateRefreshToken(payload);
-  
+
   const expiresAt = new Date(Date.now() + 15 * 60 * 1000).toISOString();
 
   return {

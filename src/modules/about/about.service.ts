@@ -17,7 +17,7 @@ export const aboutService = {
       logger.warn('Redis read failed for about cache');
     }
 
-    const about = await AboutUs.findOne().select('-updatedBy -__v').lean();
+    const about = await AboutUs.findOne().select('overview sections updatedAt').lean();
     if (!about) throw ApiError.notFound('About Us content not found');
 
     try {
@@ -30,7 +30,7 @@ export const aboutService = {
   },
 
   // ADMIN — create (only one record allowed)
-  async create(aboutUs: string, userId: string) {
+  async create(data: { overview: string; sections: any[] }, userId: string) {
     const existing = await AboutUs.findOne();
     if (existing) {
       throw ApiError.validationError(
@@ -38,7 +38,7 @@ export const aboutService = {
       );
     }
 
-    const about = await AboutUs.create({ aboutUs, updatedBy: userId });
+    const about = await AboutUs.create({ ...data, updatedBy: userId });
 
     await invalidateCache();
     logger.info('About Us created', { userId });
@@ -47,12 +47,15 @@ export const aboutService = {
   },
 
   // ADMIN — full update (PUT)
-  async update(aboutUs: string, userId: string) {
+  async update(data: { overview: string; sections: any[] }, userId: string) {
     const about = await AboutUs.findOneAndUpdate(
       {},
-      { aboutUs, updatedBy: userId },
-      { new: true, upsert: true, runValidators: true }
-    ).lean();
+      { 
+        $set: { ...data, updatedBy: userId },
+        $unset: { aboutUs: "" } // Explicitly remove the legacy massive string field
+      },
+      { new: true, upsert: true, runValidators: true, returnDocument: 'after' }
+    ).select('overview sections updatedAt').lean();
 
     await invalidateCache();
     logger.info('About Us updated', { userId });

@@ -149,7 +149,7 @@ export const termsService = {
         ...(data.effectiveDate && { effectiveDate: new Date(data.effectiveDate) }),
         updatedBy: userId,
       },
-      { new: true, runValidators: true }
+      { returnDocument: 'after', runValidators: true }
     ).lean();
 
     if (!terms) throw ApiError.notFound('Terms & Conditions not found');

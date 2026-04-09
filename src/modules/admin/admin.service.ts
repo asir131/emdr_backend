@@ -69,7 +69,7 @@ export const adminService = {
     const admin = await User.findOneAndUpdate(
       { _id: adminId, role: 'admin', isDeleted: false },
       updateData,
-      { new: true, runValidators: true }
+      { returnDocument: 'after', runValidators: true }
     ).select('firstName lastName email phoneNumber avatar role').lean();
 
     if (!admin) throw ApiError.userNotFound();

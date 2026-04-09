@@ -15,13 +15,13 @@ export const aboutController = {
 
   create: async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
-      respond(res, await aboutService.create(req.body.aboutUs, req.user!.userId), 201);
+      respond(res, await aboutService.create(req.body, req.user!.userId), 201);
     } catch (e) { next(e); }
   },
 
   update: async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
-      respond(res, await aboutService.update(req.body.aboutUs, req.user!.userId));
+      respond(res, await aboutService.update(req.body, req.user!.userId));
     } catch (e) { next(e); }
   },
 };

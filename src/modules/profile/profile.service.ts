@@ -82,7 +82,7 @@ export class ProfileService {
     const user = await User.findOneAndUpdate(
       { _id: userId, isDeleted: false },
       updateData,
-      { new: true, runValidators: true }
+      { returnDocument: 'after', runValidators: true }
     ).select('firstName lastName email phoneNumber avatar isVerified isProfileCompleted').lean();
 
     if (!user) throw ApiError.userNotFound();

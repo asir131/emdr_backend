@@ -10,6 +10,8 @@ import adminRoutes from '../modules/admin/admin.routes';
 import locationRoutes from '../modules/location/location.routes';
 
 import chatRoutes from '../modules/chat/chat.routes';
+import supportRoutes from '../modules/support/support.routes';
+import subscriptionRoutes from '../modules/subscriptions/subscription.routes';
 
 const router = Router();
 
@@ -23,5 +25,7 @@ router.use('/about', aboutRoutes);
 router.use('/admin/profile', adminRoutes);
 router.use('/location', locationRoutes);
 router.use('/chat', chatRoutes);
+router.use('/support', supportRoutes);
+router.use('/subscriptions', subscriptionRoutes);
 
 export default router;

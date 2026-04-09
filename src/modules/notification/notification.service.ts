@@ -11,7 +11,7 @@ export const notificationService = {
     const user = await User.findOneAndUpdate(
       { _id: userId, isDeleted: false },
       { fcmToken, fcmPlatform: platform },
-      { new: true }
+      { returnDocument: 'after' }
     ).select('firstName email fcmToken');
 
     if (!user) throw ApiError.userNotFound();

@@ -145,7 +145,9 @@ const userSchema = new Schema<IUser>(
 );
 
 
-userSchema.index({ email: 1 });
+// email index is already created by unique:true in schema field
+// isDeleted index is already created by index:true in schema field
+// googleId index is already created by index:true in schema field
 userSchema.index({ createdAt: -1 });
 userSchema.index({ otpExpiresAt: 1 }, { expireAfterSeconds: 600 });
 

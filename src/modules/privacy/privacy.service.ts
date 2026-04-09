@@ -82,7 +82,7 @@ export const privacyService = {
         lastUpdated:   data.lastUpdated   ? new Date(data.lastUpdated)   : new Date(),
         updatedBy:     userId,
       },
-      { new: true, runValidators: true }
+      { returnDocument: 'after', runValidators: true }
     ).lean();
 
     if (!policy) throw ApiError.notFound('Privacy Policy not found');
@@ -102,7 +102,7 @@ export const privacyService = {
     const policy = await PrivacyPolicy.findByIdAndUpdate(
       id,
       updateData,
-      { new: true, runValidators: true }
+      { returnDocument: 'after', runValidators: true }
     ).lean();
 
     if (!policy) throw ApiError.notFound('Privacy Policy not found');

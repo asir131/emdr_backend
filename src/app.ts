@@ -10,17 +10,31 @@ import { errorHandler, notFoundHandler } from './middleware/errorHandler';
 import { env } from './config/env';
 import { logger } from './config/logger';
 import { redis } from './config/redis';
+import swaggerUi from 'swagger-ui-express';
+import { swaggerSpec, swaggerCustomCss } from './config/swagger';
 
 const app = express();
 
-// Security headers
-app.use(helmet());
+// Security headers — configured to allow Swagger's internal assets
+app.use(helmet({
+  contentSecurityPolicy: false, 
+}));
 
-// CORS
+// CORS — Dynamic origin to support tunnel & multiple devices
 app.use(cors({
-  origin: env.NODE_ENV === 'production'
-    ? env.ALLOWED_ORIGINS.split(',').map(o => o.trim())
-    : '*',
+  origin: (origin, callback) => {
+    // In dev, allow and echo any origin to satisfy browser credential security
+    if (!origin || env.NODE_ENV === 'development') {
+      callback(null, true);
+    } else {
+      const allowed = env.ALLOWED_ORIGINS.split(',').map(o => o.trim());
+      if (allowed.includes(origin) || allowed.includes('*')) {
+        callback(null, true);
+      } else {
+        callback(new Error('Not allowed by CORS'));
+      }
+    }
+  },
   credentials: true,
 }));
 
@@ -72,6 +86,12 @@ app.get('/health', async (_req, res) => {
     },
   });
 });
+
+// API documentation
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec, {
+  customCss: swaggerCustomCss,
+  customSiteTitle: 'MY-EMDR API Documentation',
+}));
 
 // API routes
 app.use('/api', routes);

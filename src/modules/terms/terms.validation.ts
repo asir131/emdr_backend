@@ -2,8 +2,7 @@ import { z } from 'zod';
 
 const sectionSchema = z.object({
   title:   z.string().min(1).max(100).trim(),
-  content: z.string().min(1).trim(),
-  bullets: z.array(z.string().min(1).trim()).optional(),
+  content: z.string().min(1).trim(), // Supports HTML/Markdown
   order:   z.number().int().min(0),
 });
 
