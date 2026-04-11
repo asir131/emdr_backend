@@ -746,6 +746,11 @@ cliui@^8.0.1:
     strip-ansi "^6.0.1"
     wrap-ansi "^7.0.0"
 
+cloudflared@^0.7.1:
+  version "0.7.1"
+  resolved "https://registry.npmjs.org/cloudflared/-/cloudflared-0.7.1.tgz"
+  integrity sha512-jJn1Gu9Tf4qnIu8tfiHZ25Hs8rNcRYSVf8zAd97wvYdOCzftm1CTs1S/RPhijjGi8gUT1p9yzfDi9zYlU/0RwA==
+
 cloudinary@^2.9.0:
   version "2.9.0"
   resolved "https://registry.npmjs.org/cloudinary/-/cloudinary-2.9.0.tgz"
