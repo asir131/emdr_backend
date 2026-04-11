@@ -1,5 +1,5 @@
 import { Queue, Worker, Job } from 'bullmq';
-import { redis } from './redis';
+import { redis, redisAvailable } from './redis';
 import { logger } from './logger';
 
 export interface BroadcastJobData {
@@ -11,33 +11,39 @@ export interface BroadcastJobData {
   imageUrl?: string;
 }
 
-const connection = redis;
-
-// Queue
-export const notificationQueue = new Queue<BroadcastJobData>('notifications', {
-  connection,
-  defaultJobOptions: {
-    attempts: 3,
-    backoff: { type: 'exponential', delay: 2000 },
-    removeOnComplete: { count: 100 },
-    removeOnFail: { count: 500 },
-  },
-});
-
-// Worker — processes jobs in background
+let notificationQueue: Queue<BroadcastJobData> | null = null;
 let worker: Worker | null = null;
 
+export const getNotificationQueue = (): Queue<BroadcastJobData> | null => {
+  if (!redisAvailable) return null;
+  if (!notificationQueue) {
+    notificationQueue = new Queue<BroadcastJobData>('notifications', {
+      connection: redis,
+      defaultJobOptions: {
+        attempts: 3,
+        backoff: { type: 'exponential', delay: 2000 },
+        removeOnComplete: { count: 100 },
+        removeOnFail: { count: 500 },
+      },
+    });
+  }
+  return notificationQueue;
+};
+
 export const startNotificationWorker = () => {
+  if (!redisAvailable) {
+    logger.warn('Redis unavailable — notification worker skipped');
+    return;
+  }
+
   worker = new Worker<BroadcastJobData>(
     'notifications',
     async (job: Job<BroadcastJobData>) => {
       const { tokens, userIds, title, body, data, imageUrl } = job.data;
 
-      // Lazy import to avoid circular deps
       const { sendToMultiple } = await import('../utils/sendNotification');
       const { Notification } = await import('../modules/notification/notification.model');
 
-      // Send in batches of 500 (FCM limit)
       const BATCH = 500;
       let totalSent = 0;
       let totalFailed = 0;
@@ -59,7 +65,7 @@ export const startNotificationWorker = () => {
 
       return { sent: totalSent, failed: totalFailed };
     },
-    { connection, concurrency: 2 }
+    { connection: redis, concurrency: 2 }
   );
 
   worker.on('completed', (job) =>

@@ -1,7 +1,7 @@
 import app from './app';
 import { env } from './config/env';
 import database from './config/database';
-import { redis } from './config/redis';
+import { redis, redisAvailable } from './config/redis';
 import { startNotificationWorker } from './config/queue';
 import { logger } from './config/logger';
 
@@ -11,12 +11,14 @@ const startServer = async () => {
     await database.connect();
     logger.info('Database connected');
 
-    // Connect Redis (lazy connect)
-    await redis.connect().catch(() => {
-      logger.warn('Redis unavailable — caching disabled, app will still work');
-    });
+    // Try Redis — fail silently if unavailable
+    try {
+      await redis.connect();
+    } catch {
+      logger.warn('Redis unavailable — caching & queues disabled, app will still work');
+    }
 
-    // Start BullMQ notification worker
+    // Start BullMQ notification worker only if Redis is up
     startNotificationWorker();
 
     const server = app.listen(env.PORT, () => {

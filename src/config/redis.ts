@@ -3,21 +3,24 @@ import { logger } from './logger';
 
 const REDIS_URL = process.env.REDIS_URL ?? 'redis://localhost:6379';
 
+export let redisAvailable = false;
+
 export const redis = new Redis(REDIS_URL, {
-  maxRetriesPerRequest: null, // required by BullMQ
+  maxRetriesPerRequest: null,
   enableReadyCheck: false,
   lazyConnect: true,
+  retryStrategy: () => null, // never retry — fail fast
 });
 
-redis.on('connect', () => logger.info('Redis connected'));
-redis.on('error', (err) => logger.error('Redis error', { error: err.message }));
+redis.on('connect', () => {
+  redisAvailable = true;
+  logger.info('Redis connected');
+});
+
+// Suppress all Redis error logs silently
+redis.on('error', () => {});
 
 export const CACHE_TTL = {
-  PROFILE: 300,        // 5 minutes
-  AUTH_CHECK: 60,      // 1 minute
+  PROFILE: 300,
+  AUTH_CHECK: 60,
 } as const;
-
-// Graceful shutdown
-process.on('SIGTERM', async () => {
-  await redis.quit();
-});
