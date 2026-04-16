@@ -1,0 +1,266 @@
+{
+  "info": {
+    "name": "SUBSCRIPTION-SYSTEM",
+    "description": "Complete Subscription System API — Plans, User Subscriptions, Community Access & Admin Management",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "https://sept-structures-believed-absolute.trycloudflare.com/api", "type": "string" },
+    { "key": "userToken", "value": "", "type": "string" },
+    { "key": "adminToken", "value": "", "type": "string" },
+    { "key": "planId", "value": "", "type": "string" },
+    { "key": "requestId", "value": "", "type": "string" }
+  ],
+  "item": [
+    {
+      "name": "🌐 Public",
+      "item": [
+        {
+          "name": "Get All Active Plans",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/subscriptions/plans",
+              "host": ["{{baseUrl}}"],
+              "path": ["subscriptions", "plans"]
+            },
+            "description": "Get all active subscription plans. No auth required."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "👤 User",
+      "item": [
+        {
+          "name": "Get My Subscription",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{userToken}}", "type": "text" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/subscriptions/my",
+              "host": ["{{baseUrl}}"],
+              "path": ["subscriptions", "my"]
+            },
+            "description": "Get the current user's active subscription."
+          },
+          "response": []
+        },
+        {
+          "name": "Subscribe to a Plan",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{userToken}}", "type": "text" },
+              { "key": "Content-Type", "value": "application/json", "type": "text" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"planId\": \"{{planId}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/subscriptions/subscribe",
+              "host": ["{{baseUrl}}"],
+              "path": ["subscriptions", "subscribe"]
+            },
+            "description": "Subscribe to a Standard or Premium plan. Replace planId with actual MongoDB ObjectId."
+          },
+          "response": []
+        },
+        {
+          "name": "Apply for Community Access",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{userToken}}", "type": "text" },
+              { "key": "Content-Type", "value": "application/json", "type": "text" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"planId\": \"{{planId}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/subscriptions/apply",
+              "host": ["{{baseUrl}}"],
+              "path": ["subscriptions", "apply"]
+            },
+            "description": "Apply for a Community Access (free) plan. Requires admin approval."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "🔐 Admin — Plans",
+      "item": [
+        {
+          "name": "Get All Plans (Admin)",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{adminToken}}", "type": "text" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/subscriptions/admin/plans",
+              "host": ["{{baseUrl}}"],
+              "path": ["subscriptions", "admin", "plans"]
+            },
+            "description": "Get all plans including inactive ones. Admin only."
+          },
+          "response": []
+        },
+        {
+          "name": "Create Plan — Standard",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{adminToken}}", "type": "text" },
+              { "key": "Content-Type", "value": "application/json", "type": "text" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Standard Plan\",\n  \"type\": \"standard\",\n  \"price\": 9.99,\n  \"currency\": \"£\",\n  \"interval\": \"monthly\",\n  \"description\": \"Perfect for individuals getting started\",\n  \"tagline\": \"Most Popular\",\n  \"features\": [\n    \"Access to all basic sessions\",\n    \"Progress tracking\",\n    \"Email support\",\n    \"Up to 5 sessions/month\"\n  ],\n  \"isActive\": true,\n  \"isCommunityAccess\": false\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/subscriptions/admin/plans",
+              "host": ["{{baseUrl}}"],
+              "path": ["subscriptions", "admin", "plans"]
+            },
+            "description": "Create a new Standard subscription plan."
+          },
+          "response": []
+        },
+        {
+          "name": "Create Plan — Premium",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{adminToken}}", "type": "text" },
+              { "key": "Content-Type", "value": "application/json", "type": "text" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Premium Plan\",\n  \"type\": \"premium\",\n  \"price\": 19.99,\n  \"currency\": \"£\",\n  \"interval\": \"monthly\",\n  \"description\": \"Full access for professionals\",\n  \"tagline\": \"Best Value\",\n  \"features\": [\n    \"Unlimited sessions\",\n    \"Advanced analytics\",\n    \"Priority support\",\n    \"Custom session plans\",\n    \"1-on-1 therapist matching\"\n  ],\n  \"isActive\": true,\n  \"isCommunityAccess\": false\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/subscriptions/admin/plans",
+              "host": ["{{baseUrl}}"],
+              "path": ["subscriptions", "admin", "plans"]
+            },
+            "description": "Create a new Premium subscription plan."
+          },
+          "response": []
+        },
+        {
+          "name": "Create Plan — Community (Free)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{adminToken}}", "type": "text" },
+              { "key": "Content-Type", "value": "application/json", "type": "text" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Community Access\",\n  \"type\": \"community\",\n  \"price\": 0,\n  \"currency\": \"£\",\n  \"interval\": \"monthly\",\n  \"description\": \"Free access for community members\",\n  \"tagline\": \"Apply Now\",\n  \"features\": [\n    \"Limited session access\",\n    \"Community forum\",\n    \"Basic resources\"\n  ],\n  \"spotsAvailable\": 50,\n  \"isActive\": true,\n  \"isCommunityAccess\": true\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/subscriptions/admin/plans",
+              "host": ["{{baseUrl}}"],
+              "path": ["subscriptions", "admin", "plans"]
+            },
+            "description": "Create a Community Access (free) plan that requires admin approval."
+          },
+          "response": []
+        },
+        {
+          "name": "Update Plan",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{adminToken}}", "type": "text" },
+              { "key": "Content-Type", "value": "application/json", "type": "text" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"price\": 12.99,\n  \"tagline\": \"Updated Tagline\",\n  \"isActive\": true,\n  \"features\": [\n    \"Updated feature 1\",\n    \"Updated feature 2\",\n    \"Updated feature 3\"\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/subscriptions/admin/plans/{{planId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["subscriptions", "admin", "plans", "{{planId}}"]
+            },
+            "description": "Update an existing plan by ID. Replace planId variable."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "🔐 Admin — Requests",
+      "item": [
+        {
+          "name": "Get All Community Requests",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{adminToken}}", "type": "text" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/subscriptions/admin/requests",
+              "host": ["{{baseUrl}}"],
+              "path": ["subscriptions", "admin", "requests"]
+            },
+            "description": "Get all community access requests with user and plan details."
+          },
+          "response": []
+        },
+        {
+          "name": "Approve Request",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{adminToken}}", "type": "text" },
+              { "key": "Content-Type", "value": "application/json", "type": "text" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"approved\",\n  \"comment\": \"Welcome to the community!\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/subscriptions/admin/requests/{{requestId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["subscriptions", "admin", "requests", "{{requestId}}"]
+            },
+            "description": "Approve a community access request. User gets auto-subscribed."
+          },
+          "response": []
+        },
+        {
+          "name": "Reject Request",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{adminToken}}", "type": "text" },
+              { "key": "Content-Type", "value": "application/json", "type": "text" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"rejected\",\n  \"comment\": \"Sorry, spots are currently full.\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/subscriptions/admin/requests/{{requestId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["subscriptions", "admin", "requests", "{{requestId}}"]
+            },
+            "description": "Reject a community access request with an optional comment."
+          },
+          "response": []
+        }
+      ]
+    }
+  ]
+}

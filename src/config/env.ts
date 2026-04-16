@@ -26,6 +26,13 @@ const envSchema = z.object({
   GOOGLE_CLIENT_ID: z.string().optional(),
   REDIS_URL: z.string().default('redis://localhost:6379'),
   ALLOWED_ORIGINS: z.string().default('*'),
+
+  STRIPE_SECRET_KEY: z.string().default('sk_test_placeholder'),
+  STRIPE_WEBHOOK_SECRET: z.string().default('whsec_placeholder'),
+
+  CLOUDINARY_CLOUD_NAME: z.string().optional(),
+  CLOUDINARY_API_KEY: z.string().optional(),
+  CLOUDINARY_API_SECRET: z.string().optional(),
 });
 
 const parsed = envSchema.safeParse(process.env);

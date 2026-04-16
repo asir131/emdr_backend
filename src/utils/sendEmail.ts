@@ -223,15 +223,7 @@ const emailTemplate = (title: string, bodyContent: string): string => `<!DOCTYPE
 
 export const sendEmail = async (options: EmailOptions): Promise<void> => {
   try {
-    if (env.NODE_ENV === 'development' && !env.EMAIL_USER) {
-      console.log('📧 [DEV MODE] Email would be sent to:', options.to);
-      console.log('📧 [DEV MODE] Subject:', options.subject);
-      return;
-    }
-
     const transporter = createTransporter();
-    await transporter.verify();
-    console.log('✅ SMTP connection verified');
 
     const info = await transporter.sendMail({
       from: `"${env.EMAIL_FROM_NAME || 'MY EMDR'}" <${env.EMAIL_FROM || env.EMAIL_USER}>`,
@@ -242,15 +234,10 @@ export const sendEmail = async (options: EmailOptions): Promise<void> => {
     });
 
     console.log(`📧 Email sent to ${options.to} — ID: ${info.messageId}`);
-    console.log('✅ Accepted:', info.accepted);
     if (info.rejected?.length) console.warn('❌ Rejected:', info.rejected);
-  } catch (error) {
-    console.error('❌ Email sending failed:', error);
-    if (env.NODE_ENV === 'development') {
-      console.log('⚠️ Continuing in development mode despite email failure');
-      return;
-    }
-    throw new Error('Failed to send email');
+  } catch (error: any) {
+    console.error('❌ Email sending failed:', error?.message || error);
+    throw new Error('Failed to send email: ' + (error?.message || 'Unknown error'));
   }
 };
 

@@ -1,0 +1,137 @@
+{
+  "info": {
+    "name": "ONBOARDING-ASSESSMENT",
+    "description": "EMDR Onboarding (Profile, Safety Check, Consent) + Mental Health Assessment (PHQ-9, GAD-7, DES-11)",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "https://your-tunnel.trycloudflare.com/api", "type": "string" },
+    { "key": "userToken", "value": "", "type": "string" }
+  ],
+  "item": [
+    {
+      "name": "🧭 Onboarding",
+      "item": [
+        {
+          "name": "Get Onboarding Status",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{userToken}}" }],
+            "url": { "raw": "{{baseUrl}}/onboarding/status", "host": ["{{baseUrl}}"], "path": ["onboarding", "status"] },
+            "description": "Get current onboarding step and completed data."
+          }
+        },
+        {
+          "name": "Step 1 — Save Profile",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{userToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"dateOfBirth\": \"1990-05-15\",\n  \"sex\": \"male\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/onboarding/profile", "host": ["{{baseUrl}}"], "path": ["onboarding", "profile"] },
+            "description": "Save date of birth and sex. sex: male | female | other | prefer_not_to_say"
+          }
+        },
+        {
+          "name": "Step 2 — Safety Check (Pass)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{userToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"activeSuicidalThoughts\": false,\n  \"historyOfSeizures\": false,\n  \"pregnancy\": false,\n  \"severeDissociativeDisorders\": false,\n  \"activePsychosis\": false\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/onboarding/safety-check", "host": ["{{baseUrl}}"], "path": ["onboarding", "safety-check"] },
+            "description": "All false = passes safety check. Any true = blocked with error."
+          }
+        },
+        {
+          "name": "Step 2 — Safety Check (Fail — Suicidal)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{userToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"activeSuicidalThoughts\": true,\n  \"historyOfSeizures\": false,\n  \"pregnancy\": false,\n  \"severeDissociativeDisorders\": false,\n  \"activePsychosis\": false\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/onboarding/safety-check", "host": ["{{baseUrl}}"], "path": ["onboarding", "safety-check"] },
+            "description": "Returns 400 error — user cannot continue."
+          }
+        },
+        {
+          "name": "Step 3 — Save Consent",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{userToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"understoodEMDRNatureAndRisks\": true,\n  \"agreedToGDPR\": true,\n  \"participatingVoluntarily\": true,\n  \"savedCrisisSupportNumbers\": true,\n  \"optionalResearchParticipation\": false,\n  \"electronicSignature\": \"Ratul Sikder Ahmed\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/onboarding/consent", "host": ["{{baseUrl}}"], "path": ["onboarding", "consent"] },
+            "description": "All 4 required consents must be true. electronicSignature = full name typed."
+          }
+        }
+      ]
+    },
+    {
+      "name": "🧠 Assessment",
+      "item": [
+        {
+          "name": "Submit Assessment (Minimal Scores)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{userToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"phq9Answers\": [0, 0, 0, 0, 0, 0, 0, 0, 0],\n  \"gad7Answers\": [0, 0, 0, 0, 0, 0, 0],\n  \"des11Answers\": [2.5, 2.5, 2.5, 2.5, 2.5, 2.5, 2.5, 2.5]\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/assessment/submit", "host": ["{{baseUrl}}"], "path": ["assessment", "submit"] },
+            "description": "PHQ-9: 9 answers (0-3). GAD-7: 7 answers (0-3). DES-11: 8 answers (0-100). Low scores = proceed to payment."
+          }
+        },
+        {
+          "name": "Submit Assessment (Severe — Blocked)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{userToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"phq9Answers\": [3, 3, 3, 3, 3, 3, 3, 3, 1],\n  \"gad7Answers\": [3, 3, 3, 3, 3, 3, 3],\n  \"des11Answers\": [40, 50, 60, 70, 30, 40, 50, 60]\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/assessment/submit", "host": ["{{baseUrl}}"], "path": ["assessment", "submit"] },
+            "description": "High scores = requiresProfessionalSupport: true. User shown crisis resources."
+          }
+        },
+        {
+          "name": "Get Latest Assessment Result",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{userToken}}" }],
+            "url": { "raw": "{{baseUrl}}/assessment/result", "host": ["{{baseUrl}}"], "path": ["assessment", "result"] },
+            "description": "Get the most recent assessment scores and recommendation."
+          }
+        }
+      ]
+    }
+  ]
+}

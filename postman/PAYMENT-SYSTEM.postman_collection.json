@@ -1,0 +1,104 @@
+{
+  "info": {
+    "name": "PAYMENT-SYSTEM",
+    "description": "Stripe Payment System — Create Intent, Confirm Payment, History, Webhook",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "https://your-tunnel.trycloudflare.com/api", "type": "string" },
+    { "key": "userToken", "value": "", "type": "string" },
+    { "key": "planId", "value": "", "type": "string" },
+    { "key": "paymentIntentId", "value": "", "type": "string" }
+  ],
+  "item": [
+    {
+      "name": "Step 1 — Create Payment Intent",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "const res = pm.response.json();",
+              "if (res.success) {",
+              "  pm.collectionVariables.set('paymentIntentId', res.data.paymentIntentId);",
+              "  console.log('clientSecret:', res.data.clientSecret);",
+              "}"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{userToken}}" },
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"planId\": \"{{planId}}\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/payment/create-intent",
+          "host": ["{{baseUrl}}"],
+          "path": ["payment", "create-intent"]
+        },
+        "description": "Creates a Stripe PaymentIntent. Returns clientSecret (used by Flutter Stripe SDK) and paymentIntentId.\n\nFlow:\n1. Call this endpoint\n2. Use clientSecret in Flutter: stripe.confirmPayment(clientSecret, cardDetails)\n3. After Flutter confirms, call /payment/confirm"
+      }
+    },
+    {
+      "name": "Step 2 — Confirm Payment",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{userToken}}" },
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"paymentIntentId\": \"{{paymentIntentId}}\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/payment/confirm",
+          "host": ["{{baseUrl}}"],
+          "path": ["payment", "confirm"]
+        },
+        "description": "Called AFTER Flutter Stripe SDK confirms the payment on client side.\nIf succeeded → subscription is activated automatically.\nResponse includes subscriptionId."
+      }
+    },
+    {
+      "name": "Get Payment History",
+      "request": {
+        "method": "GET",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{userToken}}" }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/payment/history",
+          "host": ["{{baseUrl}}"],
+          "path": ["payment", "history"]
+        },
+        "description": "Get all payment records for the logged-in user."
+      }
+    },
+    {
+      "name": "Stripe Webhook (Stripe → Server)",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "stripe-signature", "value": "whsec_test_signature" },
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"type\": \"payment_intent.succeeded\",\n  \"data\": {\n    \"object\": {\n      \"id\": \"pi_test_123\"\n    }\n  }\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/payment/webhook",
+          "host": ["{{baseUrl}}"],
+          "path": ["payment", "webhook"]
+        },
+        "description": "This endpoint is called by Stripe automatically. Do NOT call manually in production.\nFor local testing use: stripe listen --forward-to localhost:5005/api/payment/webhook"
+      }
+    }
+  ]
+}

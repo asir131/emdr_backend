@@ -85,7 +85,8 @@ export class AuthService {
 
     try {
       await sendOTPEmail(email, otp, firstName);
-    } catch (error) {
+    } catch (error: any) {
+      console.error('❌ OTP email failed:', error?.message || error);
       await User.findByIdAndDelete(user._id);
       throw ApiError.internalError('Failed to send verification email. Please try again.');
     }
