@@ -15,6 +15,7 @@ import onboardingRoutes from '../modules/onboarding/onboarding.routes';
 import assessmentRoutes from '../modules/assessment/assessment.routes';
 
 import paymentRoutes from '../modules/payment/payment.routes';
+import categoryRoutes from '../modules/category/category.routes';
 
 const router = Router();
 
@@ -33,5 +34,6 @@ router.use('/subscriptions', subscriptionRoutes);
 router.use('/onboarding', onboardingRoutes);
 router.use('/assessment', assessmentRoutes);
 router.use('/payment', paymentRoutes);
+router.use('/', categoryRoutes);
 
 export default router;

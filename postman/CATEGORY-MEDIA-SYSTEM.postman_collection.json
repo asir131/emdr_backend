@@ -1,0 +1,140 @@
+{
+  "info": {
+    "name": "CATEGORY-MEDIA-SYSTEM",
+    "description": "Category CRUD + Media Upload CRUD (SVG, PNG, JPG, MP4, MP3 — max 10MB)",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "https://your-tunnel.trycloudflare.com/api", "type": "string" },
+    { "key": "adminToken", "value": "", "type": "string" },
+    { "key": "userToken", "value": "", "type": "string" },
+    { "key": "categoryId", "value": "", "type": "string" },
+    { "key": "mediaId", "value": "", "type": "string" }
+  ],
+  "item": [
+    {
+      "name": "📁 Category",
+      "item": [
+        {
+          "name": "Create Category",
+          "event": [{ "listen": "test", "script": { "exec": ["const r = pm.response.json(); if(r.success) pm.collectionVariables.set('categoryId', r.data._id);"] } }],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{adminToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"categoryName\": \"Therapy Sessions\"\n}" },
+            "url": { "raw": "{{baseUrl}}/categories", "host": ["{{baseUrl}}"], "path": ["categories"] }
+          }
+        },
+        {
+          "name": "Get All Categories",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{userToken}}" }],
+            "url": { "raw": "{{baseUrl}}/categories", "host": ["{{baseUrl}}"], "path": ["categories"] }
+          }
+        },
+        {
+          "name": "Get Category By ID",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{userToken}}" }],
+            "url": { "raw": "{{baseUrl}}/categories/{{categoryId}}", "host": ["{{baseUrl}}"], "path": ["categories", "{{categoryId}}"] }
+          }
+        },
+        {
+          "name": "Update Category",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{adminToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"categoryName\": \"EMDR Therapy Sessions\",\n  \"isActive\": true\n}" },
+            "url": { "raw": "{{baseUrl}}/categories/{{categoryId}}", "host": ["{{baseUrl}}"], "path": ["categories", "{{categoryId}}"] }
+          }
+        },
+        {
+          "name": "Delete Category",
+          "request": {
+            "method": "DELETE",
+            "header": [{ "key": "Authorization", "value": "Bearer {{adminToken}}" }],
+            "url": { "raw": "{{baseUrl}}/categories/{{categoryId}}", "host": ["{{baseUrl}}"], "path": ["categories", "{{categoryId}}"] },
+            "description": "Deletes category AND all its media from Cloudinary."
+          }
+        }
+      ]
+    },
+    {
+      "name": "🖼️ Media",
+      "item": [
+        {
+          "name": "Upload Media (Image/Video/Audio)",
+          "event": [{ "listen": "test", "script": { "exec": ["const r = pm.response.json(); if(r.success) pm.collectionVariables.set('mediaId', r.data._id);"] } }],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Authorization", "value": "Bearer {{adminToken}}" }],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                { "key": "image", "type": "file", "src": "", "description": "SVG, PNG, JPG, MP4, MP3 — max 10MB" },
+                { "key": "categoryId", "value": "{{categoryId}}", "type": "text" },
+                { "key": "status", "value": "active", "type": "text", "description": "active | inactive" }
+              ]
+            },
+            "url": { "raw": "{{baseUrl}}/media", "host": ["{{baseUrl}}"], "path": ["media"] },
+            "description": "Upload file as multipart/form-data. Field name must be 'image'."
+          }
+        },
+        {
+          "name": "Get All Media",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{userToken}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/media?page=1&limit=20",
+              "host": ["{{baseUrl}}"], "path": ["media"],
+              "query": [
+                { "key": "page", "value": "1" },
+                { "key": "limit", "value": "20" },
+                { "key": "categoryId", "value": "{{categoryId}}", "disabled": true },
+                { "key": "status", "value": "active", "disabled": true }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Media By ID",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{userToken}}" }],
+            "url": { "raw": "{{baseUrl}}/media/{{mediaId}}", "host": ["{{baseUrl}}"], "path": ["media", "{{mediaId}}"] }
+          }
+        },
+        {
+          "name": "Update Media",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{adminToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"status\": \"inactive\",\n  \"categoryId\": \"{{categoryId}}\"\n}" },
+            "url": { "raw": "{{baseUrl}}/media/{{mediaId}}", "host": ["{{baseUrl}}"], "path": ["media", "{{mediaId}}"] }
+          }
+        },
+        {
+          "name": "Delete Media",
+          "request": {
+            "method": "DELETE",
+            "header": [{ "key": "Authorization", "value": "Bearer {{adminToken}}" }],
+            "url": { "raw": "{{baseUrl}}/media/{{mediaId}}", "host": ["{{baseUrl}}"], "path": ["media", "{{mediaId}}"] },
+            "description": "Deletes media record AND file from Cloudinary."
+          }
+        }
+      ]
+    }
+  ]
+}
