@@ -1,0 +1,38 @@
+{
+  "info": {
+    "name": "BILATERAL-STIMULATION",
+    "description": "Bilateral Stimulation — User Settings only (config + save)",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl",   "value": "https://your-tunnel.trycloudflare.com/api", "type": "string" },
+    { "key": "userToken", "value": "", "type": "string" }
+  ],
+  "item": [
+    {
+      "name": "Get Full Config",
+      "request": {
+        "method": "GET",
+        "header": [{ "key": "Authorization", "value": "Bearer {{userToken}}" }],
+        "url": { "raw": "{{baseUrl}}/bilateral/config", "host": ["{{baseUrl}}"], "path": ["bilateral","config"] },
+        "description": "Returns all active environments + objects + sounds + user's saved settings."
+      }
+    },
+    {
+      "name": "Save / Update Settings",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{userToken}}" },
+          { "key": "Content-Type",  "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"environmentId\": \"https://res.cloudinary.com/dbglkfj2z/image/upload/v1776466488/my-emdr/media/media_69c70af6f992b944bccd41a9_1776466482919.jpg\",\n  \"iconUrl\": \"https://i.ibb.co.com/8gLSdQ5b/e058f40becebd809f637fcf1a060abeaef9c1c6f.png\",\n  \"soundId\": \"https://res.cloudinary.com/dbglkfj2z/video/upload/v1776460694/my-emdr/media/media_69c70af6f992b944bccd41a9_1776460689332.wav\",\n  \"direction\": \"left-right\",\n  \"speed\": \"medium\"\n}"
+        },
+        "url": { "raw": "{{baseUrl}}/bilateral/settings", "host": ["{{baseUrl}}"], "path": ["bilateral","settings"] },
+        "description": "environmentId → image URL\niconUrl → icon URL\nsoundId → audio URL\ndirection: left-right | diagonal-down | diagonal-up\nspeed: slow | medium | fast\n\nThis endpoint creates or updates (upsert) the user's settings."
+      }
+    }
+  ]
+}

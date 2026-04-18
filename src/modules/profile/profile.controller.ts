@@ -5,7 +5,6 @@ import { uploadProfilePic } from '../../middleware/upload';
 import { ApiError } from '../../utils/ApiError';
 
 export class ProfileController {
-  // GET /profile
   async getProfile(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
     try {
       const userId = req.user!.userId;
@@ -16,7 +15,6 @@ export class ProfileController {
     }
   }
 
-  // PATCH /profile
   async updateProfile(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
     uploadProfilePic(req as any, res, async (err) => {
       try {
@@ -38,7 +36,6 @@ export class ProfileController {
     });
   }
 
-  // DELETE /profile
   async deleteAccount(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
     try {
       const userId = req.user!.userId;
@@ -49,7 +46,6 @@ export class ProfileController {
     }
   }
 
-  // PATCH /profile/change-password
   async changePassword(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
     try {
       const userId = req.user!.userId;
