@@ -98,6 +98,13 @@ export const subscriptionService = {
     return plan;
   },
 
+  async adminDeletePlan(id: string) {
+    const plan = await SubscriptionPlan.findByIdAndDelete(id);
+    if (!plan) throw ApiError.notFound('Plan not found');
+    logger.info('Subscription plan deleted by admin', { planId: id });
+    return plan;
+  },
+
   async adminGetRequests() {
     return SubscriptionRequest.find()
       .populate('userId', 'firstName lastName email')

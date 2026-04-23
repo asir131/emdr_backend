@@ -66,6 +66,13 @@ export const subscriptionController = {
     } catch (e) { next(e); }
   },
 
+  adminDeletePlan: async (req: AuthRequest, res: Response, next: NextFunction) => {
+    try {
+      await subscriptionService.adminDeletePlan(req.params.id);
+      respond(res, { message: 'Plan deleted successfully' });
+    } catch (e) { next(e); }
+  },
+
   adminGetRequests: async (_req: AuthRequest, res: Response, next: NextFunction) => {
     try {
       respond(res, await subscriptionService.adminGetRequests());

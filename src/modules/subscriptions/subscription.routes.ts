@@ -7,6 +7,7 @@ import {
   createPlanSchema,
   updatePlanSchema,
   reviewRequestSchema,
+  idParamSchema,
 } from './subscription.validation';
 
 const router = Router();
@@ -191,6 +192,25 @@ router.post('/admin/plans', validate(createPlanSchema), ctrl.adminCreatePlan);
  *         description: Plan updated
  */
 router.put('/admin/plans/:id', validate(updatePlanSchema), ctrl.adminUpdatePlan);
+
+/**
+ * @swagger
+ * /api/subscriptions/admin/plans/{id}:
+ *   delete:
+ *     summary: Delete a subscription plan (Admin Only)
+ *     tags: [Subscriptions]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema: { type: string }
+ *     responses:
+ *       200:
+ *         description: Plan deleted
+ */
+router.delete('/admin/plans/:id', validate(idParamSchema), ctrl.adminDeletePlan);
 
 /**
  * @swagger
