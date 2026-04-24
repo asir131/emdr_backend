@@ -5,7 +5,7 @@ const objectIdSchema = z.string().refine((val) => mongoose.Types.ObjectId.isVali
   message: 'Invalid ObjectId',
 });
 
-export const updateSessionProgressSchema = {
+export const updateSessionProgressSchema = z.object({
   body: z.object({
     journeyId:         objectIdSchema,
     totalSession:      z.number().int().nonnegative(),
@@ -14,10 +14,11 @@ export const updateSessionProgressSchema = {
     message: "Completed sessions cannot exceed total sessions",
     path: ["compledSession"]
   }),
-};
+});
 
-export const getSessionProgressSchema = {
+export const getSessionProgressSchema = z.object({
   params: z.object({
     journeyId: objectIdSchema,
   }),
-};
+});
+

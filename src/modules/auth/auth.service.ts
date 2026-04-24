@@ -6,6 +6,8 @@ import { generateTokenPair, TokenPair, generateAccessToken, generateRefreshToken
 import { sendOTPEmail, sendPasswordResetEmail } from '../../utils/sendEmail';
 import { verifyGoogleToken } from '../../utils/verifyGoogleToken';
 import { env } from '../../config/env';
+import { UserSubscription } from '../subscriptions/subscription.model';
+import { SessionProgress } from '../progress/sessionProgress.model';
 
 interface SignupData {
   firstName: string;
@@ -45,11 +47,27 @@ interface LoginResponse {
     email: string;
     role: string;
     isVerified: boolean;
+    SubscriptionPlan: string;
+    youSession: string;
   };
   session: TokenPair;
 }
 
 export class AuthService {
+  private async getExtraUserData(userId: mongoose.Types.ObjectId) {
+    // Get Subscription Plan
+    const subscription = await UserSubscription.findOne({ userId, status: 'active' }).populate('planId').lean();
+    const SubscriptionPlan = subscription && (subscription.planId as any)?.name ? (subscription.planId as any).name : 'Free';
+
+    // Get Session Stats
+    const sessionStats = await SessionProgress.aggregate([
+      { $match: { userId } },
+      { $group: { _id: null, totalCompleted: { $sum: "$completedSessions" } } }
+    ]);
+    const youSession = sessionStats.length > 0 ? sessionStats[0].totalCompleted.toString() : "0";
+
+    return { SubscriptionPlan, youSession };
+  }
 
   async signup(data: SignupData): Promise<SignupResponse> {
     const { firstName, lastName, email, password, isAcceptPrivacyStatement } = data;
@@ -207,8 +225,10 @@ export class AuthService {
     user.otpAttempts = 0;
     await user.save();
 
+    const { SubscriptionPlan, youSession } = await this.getExtraUserData(user._id);
+
     return {
-      message: 'Email verified successfully',
+      message: "Email verified successfully.",
       user: {
         id: user._id.toString(),
         firstName: user.firstName,
@@ -217,6 +237,8 @@ export class AuthService {
         isVerified: user.isVerified,
         authProvider: user.authProvider,
         isProfileCompleted: user.isProfileCompleted,
+        SubscriptionPlan,
+        youSession,
       },
     };
   }
@@ -316,6 +338,9 @@ export class AuthService {
     user.refreshToken = hashedRefreshToken;
     await user.save();
 
+    // Get Subscription Plan
+    const { SubscriptionPlan, youSession } = await this.getExtraUserData(user._id);
+
     return {
       message: 'Login successful',
       user: {
@@ -325,6 +350,8 @@ export class AuthService {
         email: user.email,
         role: user.role,
         isVerified: user.isVerified,
+        SubscriptionPlan,
+        youSession,
       },
       session: tokens,
     };
@@ -499,6 +526,8 @@ export class AuthService {
     user.otpAttempts = 0;
     await user.save();
 
+    const { SubscriptionPlan, youSession } = await this.getExtraUserData(user._id);
+
     return {
       message: 'Email verified successfully',
       user: {
@@ -509,6 +538,8 @@ export class AuthService {
         isVerified: user.isVerified,
         authProvider: user.authProvider,
         isProfileCompleted: user.isProfileCompleted,
+        SubscriptionPlan,
+        youSession,
       },
     };
   }
@@ -582,6 +613,8 @@ export class AuthService {
     user.lastLogin    = new Date();
     await user.save();
 
+    const { SubscriptionPlan, youSession } = await this.getExtraUserData(user._id);
+
     return {
       message:   isNewUser ? 'Account created successfully via Google' : 'Login successful via Google',
       isNewUser,
@@ -595,6 +628,8 @@ export class AuthService {
         isVerified:         user.isVerified,
         isProfileCompleted: user.isProfileCompleted,
         role:               user.role,
+        SubscriptionPlan,
+        youSession,
       },
       session: tokens,
     };

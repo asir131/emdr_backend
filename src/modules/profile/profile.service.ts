@@ -5,10 +5,28 @@ import { logger } from '../../config/logger';
 import bcrypt from 'bcryptjs';
 import { sendPasswordChangedEmail } from '../../utils/sendEmail';
 import { uploadToCloudinary, deleteFromCloudinary } from '../../utils/uploadImage';
+import { UserSubscription } from '../subscriptions/subscription.model';
+import { SessionProgress } from '../progress/sessionProgress.model';
+import mongoose from 'mongoose';
 
 const profileCacheKey = (userId: string) => `profile:${userId}`;
 
 export class ProfileService {
+  private async getExtraUserData(userId: string) {
+    const userObjectId = new mongoose.Types.ObjectId(userId);
+    // Get Subscription Plan
+    const subscription = await UserSubscription.findOne({ userId: userObjectId, status: 'active' }).populate('planId').lean();
+    const SubscriptionPlan = subscription && (subscription.planId as any)?.name ? (subscription.planId as any).name : 'Free';
+
+    // Get Session Stats
+    const sessionStats = await SessionProgress.aggregate([
+      { $match: { userId: userObjectId } },
+      { $group: { _id: null, totalCompleted: { $sum: "$completedSessions" } } }
+    ]);
+    const youSession = sessionStats.length > 0 ? sessionStats[0].totalCompleted.toString() : "0";
+
+    return { SubscriptionPlan, youSession };
+  }
 
   // GET profile — Redis cached
   async getProfile(userId: string) {
@@ -28,6 +46,8 @@ export class ProfileService {
 
     if (!user) throw ApiError.userNotFound();
 
+    const { SubscriptionPlan, youSession } = await this.getExtraUserData(userId);
+
     const profile = {
       id: user._id.toString(),
       fullName: `${user.firstName} ${user.lastName}`.trim(),
@@ -38,6 +58,8 @@ export class ProfileService {
       isProfileCompleted: user.isProfileCompleted,
       authProvider: user.authProvider,
       role: user.role,
+      SubscriptionPlan,
+      youSession,
       memberSince: user.createdAt,
     };
 
@@ -87,14 +109,18 @@ export class ProfileService {
 
     if (!user) throw ApiError.userNotFound();
 
+    const { SubscriptionPlan, youSession } = await this.getExtraUserData(userId);
+
     const profile = {
       id: user._id.toString(),
       fullName: `${user.firstName} ${user.lastName}`.trim(),
       email: user.email,
       phoneNumber: user.phoneNumber ?? null,
-      profilePic: user.avatar ?? null,
+      avatar: user.avatar ?? null,
       isVerified: user.isVerified,
       isProfileCompleted: user.isProfileCompleted,
+      SubscriptionPlan,
+      youSession,
     };
 
     // Invalidate cache
