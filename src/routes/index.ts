@@ -20,6 +20,7 @@ import journeyRoutes from '../modules/journey/journey.routes';
 import bilateralRoutes from '../modules/bilateral/bilateral.routes';
 import progressRoutes from '../modules/progress/progress.routes';
 import sessionProgressRoutes from '../modules/progress/sessionProgress.routes';
+import watchTimeRoutes from '../modules/progress/watchTime.routes';
 import uploadRoutes from '../modules/upload/upload.routes';
 import calmPlaceRoutes from '../modules/calm-place/calmPlace.routes';
 
@@ -45,6 +46,7 @@ router.use('/journeys', journeyRoutes);
 router.use('/bilateral', bilateralRoutes);
 router.use('/progress', progressRoutes);
 router.use('/session-progress', sessionProgressRoutes);
+router.use('/watch-time', watchTimeRoutes);
 router.use('/upload', uploadRoutes);
 router.use('/calm-place', calmPlaceRoutes);
 

@@ -1,0 +1,107 @@
+{
+	"info": {
+		"name": "MY-EMDR Watch Time Tracking",
+		"description": "APIs to track daily usage time (watch time) for sessions and journeys using a heartbeat mechanism.",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "1. Log Watch Time (Heartbeat)",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"journeyId\": \"PASTE_JOURNEY_ID_HERE\",\n    \"seconds\": 30\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{baseUrl}}/api/watch-time/log",
+					"host": [
+						"{{baseUrl}}"
+					],
+					"path": [
+						"api",
+						"watch-time",
+						"log"
+					]
+				},
+				"description": "Call this every 30-60 seconds while the user is active in a session. It will increment the total watch time for today."
+			},
+			"response": []
+		},
+		{
+			"name": "2. Get Weekly Stats",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{baseUrl}}/api/watch-time/weekly-stats",
+					"host": [
+						"{{baseUrl}}"
+					],
+					"path": [
+						"api",
+						"watch-time",
+						"weekly-stats"
+					]
+				},
+				"description": "Returns the watch time stats for the last 7 active days, formatted as h/m/s."
+			},
+			"response": []
+		},
+		{
+			"name": "3. Get Journey Total Time",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{baseUrl}}/api/watch-time/journey/:journeyId",
+					"host": [
+						"{{baseUrl}}"
+					],
+					"path": [
+						"api",
+						"watch-time",
+						"journey",
+						":journeyId"
+					],
+					"variable": [
+						{
+							"key": "journeyId",
+							"value": "PASTE_JOURNEY_ID_HERE"
+						}
+					]
+				},
+				"description": "Returns the cumulative total time spent on a specific journey across all days."
+			},
+			"response": []
+		}
+	],
+	"auth": {
+		"type": "bearer",
+		"bearer": [
+			{
+				"key": "token",
+				"value": "{{accessToken}}",
+				"type": "string"
+			}
+		]
+	},
+	"variable": [
+		{
+			"key": "baseUrl",
+			"value": "http://localhost:5005",
+			"type": "string"
+		},
+		{
+			"key": "accessToken",
+			"value": "PASTE_YOUR_TOKEN_HERE",
+			"type": "string"
+		}
+	]
+}
