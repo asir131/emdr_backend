@@ -19,7 +19,7 @@ const mkLimiter = (max: number, windowMs: number, msg: string) =>
 
 const signupLimiter = mkLimiter(10, 10 * 60 * 1000, 'Too many signup attempts');
 const otpLimiter = mkLimiter(10, 10 * 60 * 1000, 'Too many OTP attempts');
-const loginLimiter = mkLimiter(500, 15 * 60 * 1000, 'Too many login attempts');
+const loginLimiter = mkLimiter(5000, 15 * 60 * 1000, 'Too many login attempts');
 const googleLimiter = mkLimiter(20, 15 * 60 * 1000, 'Too many Google auth attempts');
 
 const ctrl = authController;

@@ -1,8 +1,9 @@
 import { User } from '../auth/auth.model';
-import { UserSubscription, SubscriptionStatus } from '../subscriptions/subscription.model';
+import { UserSubscription, SubscriptionPlan, SubscriptionStatus } from '../subscriptions/subscription.model';
 import { Journey } from '../journey/journey.model';
 import { SessionProgress } from '../progress/sessionProgress.model';
 import { WatchTime } from '../progress/watchTime.model';
+import { Payment } from '../payment/payment.model';
 import { ApiError } from '../../utils/ApiError';
 import { redis } from '../../config/redis';
 import { logger } from '../../config/logger';
@@ -15,111 +16,8 @@ const CACHE_TTL = 300; // 5 minutes
 export const adminService = {
 
   /**
-   * GET All Users with Subscription and Progress (FOR TABLE)
+   * GET Admin Dashboard Overview Data with REAL REVENUE TREND
    */
-  async getAllUsers(page = 1, limit = 10, search = '') {
-    const skip = (page - 1) * limit;
-    
-    // Search filter
-    const query: any = { role: 'user', isDeleted: false };
-    if (search) {
-      query.$or = [
-        { firstName: { $regex: search, $options: 'i' } },
-        { lastName: { $regex: search, $options: 'i' } },
-        { email: { $regex: search, $options: 'i' } }
-      ];
-    }
-
-    const users = await User.find(query)
-      .sort({ createdAt: -1 })
-      .skip(skip)
-      .limit(limit)
-      .lean();
-
-    const total = await User.countDocuments(query);
-
-    // Enrich user data with Subscription and Progress
-    const enrichedUsers = await Promise.all(users.map(async (u) => {
-      const subscription = await UserSubscription.findOne({ userId: u._id, status: SubscriptionStatus.ACTIVE })
-        .populate('planId', 'name')
-        .lean();
-
-      const progress = await SessionProgress.findOne({ userId: u._id })
-        .sort({ updatedAt: -1 })
-        .lean();
-
-      return {
-        id: u._id,
-        userName: `${u.firstName} ${u.lastName}`,
-        email: u.email,
-        subscription: subscription ? (subscription.planId as any)?.name : 'Free',
-        roadmapType: progress ? 'Personalized' : 'None', // Example mapping
-        sessionProgress: progress ? progress.progressPercentage : '0%',
-        status: u.status || 'active',
-        joinedDate: u.createdAt
-      };
-    }));
-
-    return {
-      users: enrichedUsers,
-      pagination: {
-        total,
-        page,
-        limit,
-        totalPages: Math.ceil(total / limit)
-      }
-    };
-  },
-
-  /**
-   * GET Single User Detailed Info (FOR MODAL)
-   */
-  async getUserDetails(userId: string) {
-    const user = await User.findOne({ _id: userId, isDeleted: false }).lean();
-    if (!user) throw ApiError.userNotFound();
-
-    const subscription = await UserSubscription.findOne({ userId: user._id })
-      .populate('planId')
-      .sort({ createdAt: -1 })
-      .lean();
-
-    const progress = await SessionProgress.find({ userId: user._id }).lean();
-    const totalCompleted = progress.reduce((acc, curr) => acc + curr.completedSessions, 0);
-    const avgProgress = progress.length > 0 
-      ? Math.round(progress.reduce((acc, curr) => acc + parseInt(curr.progressPercentage), 0) / progress.length)
-      : 0;
-
-    const lastActiveRecord = await WatchTime.findOne({ userId: user._id }).sort({ lastActive: -1 }).lean();
-
-    return {
-      userId: `USER-${user._id.toString().slice(-4).toUpperCase()}`,
-      email: user.email,
-      roadmapType: 'Psychologist', // Mapping logic here
-      sessionsCompleted: totalCompleted,
-      subscriptionPlan: subscription ? `${(subscription.planId as any)?.name} (${(subscription.planId as any)?.type})` : 'Free',
-      status: user.status || 'active',
-      joinedDate: user.createdAt,
-      lastActive: lastActiveRecord ? lastActiveRecord.lastActive : user.updatedAt,
-      overallProgress: `${avgProgress}%`
-    };
-  },
-
-  /**
-   * Update User Status (Activate/Suspend)
-   */
-  async updateUserStatus(userId: string, status: 'active' | 'suspended') {
-    const user = await User.findOneAndUpdate(
-      { _id: userId },
-      { status },
-      { new: true }
-    );
-    if (!user) throw ApiError.userNotFound();
-    
-    logger.info(`User status updated to ${status}`, { userId });
-    return { id: user._id, status: user.status };
-  },
-
-  // --- Dashboard Logic ---
   async getDashboardStats() {
     const totalUsers = await User.countDocuments({ role: 'user', isDeleted: false });
     const activeUsers = await User.countDocuments({ role: 'user', isDeleted: false, status: 'active' });
@@ -146,6 +44,28 @@ export const adminService = {
     ]);
     const totalMRR = mrrStats.length > 0 ? mrrStats[0].totalMRR : 0;
 
+    // --- REAL REVENUE TREND (Last 12 Months from Payment Collection) ---
+    const twelveMonthsAgo = new Date();
+    twelveMonthsAgo.setMonth(twelveMonthsAgo.getMonth() - 11);
+    twelveMonthsAgo.setDate(1);
+
+    const realRevenueTrend = await Payment.aggregate([
+      { $match: { status: 'succeeded', createdAt: { $gte: twelveMonthsAgo } } },
+      { $group: { _id: { year: { $year: "$createdAt" }, month: { $month: "$createdAt" } }, revenue: { $sum: "$amount" } } },
+      { $sort: { "_id.year": 1, "_id.month": 1 } }
+    ]);
+
+    const monthsShort = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const trend = [];
+    const now = new Date();
+    for (let i = 11; i >= 0; i--) {
+        const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+        const y = d.getFullYear();
+        const m = d.getMonth() + 1;
+        const matched = realRevenueTrend.find(r => r._id.year === y && r._id.month === m);
+        trend.push({ month: monthsShort[d.getMonth()], value: matched ? Math.round(matched.revenue) : 0 });
+    }
+
     const distribution = await UserSubscription.aggregate([
       { $match: { status: SubscriptionStatus.ACTIVE } },
       { $lookup: { from: 'subscriptionplans', localField: 'planId', foreignField: '_id', as: 'p' } },
@@ -162,20 +82,91 @@ export const adminService = {
         roadmapsCreated: { count: totalRoadmaps, ai: aiRoadmaps, psychologist: psychologistRoadmaps, growth: '+15%' },
         sessionCompletion: { rate: `${avgSessionCompletion}%`, growth: '+15%' }
       },
-      revenue: { mrr: totalMRR, currency: '£', growth: '+15%', trend: [] },
+      revenue: { mrr: totalMRR, currency: '£', growth: '+15%', trend: trend },
       subscriptionDistribution: distribution
     };
   },
 
-  // --- Profile Logic ---
+  /**
+   * GET All Users (FOR TABLE)
+   */
+  async getAllUsers(page = 1, limit = 10, search = '') {
+    const skip = (page - 1) * limit;
+    const query: any = { role: 'user', isDeleted: false };
+    if (search) {
+      query.$or = [{ firstName: { $regex: search, $options: 'i' } }, { lastName: { $regex: search, $options: 'i' } }, { email: { $regex: search, $options: 'i' } }];
+    }
+    const users = await User.find(query).sort({ createdAt: -1 }).skip(skip).limit(limit).lean();
+    const total = await User.countDocuments(query);
+
+    const enrichedUsers = await Promise.all(users.map(async (u) => {
+      const sub = await UserSubscription.findOne({ userId: u._id, status: SubscriptionStatus.ACTIVE }).populate('planId', 'name').lean();
+      const progress = await SessionProgress.findOne({ userId: u._id }).sort({ updatedAt: -1 }).lean();
+      return { id: u._id, userName: `${u.firstName} ${u.lastName}`, email: u.email, subscription: sub ? (sub.planId as any)?.name : 'Free', roadmapType: progress ? 'Personalized' : 'None', sessionProgress: progress ? progress.progressPercentage : '0%', status: u.status || 'active', joinedDate: u.createdAt };
+    }));
+
+    return { users: enrichedUsers, pagination: { total, page, limit, totalPages: Math.ceil(total / limit) } };
+  },
+
+  /**
+   * GET Single User Detailed Info
+   */
+  async getUserDetails(userId: string) {
+    const user = await User.findOne({ _id: userId, isDeleted: false }).lean();
+    if (!user) throw ApiError.userNotFound();
+    const sub = await UserSubscription.findOne({ userId: user._id }).populate('planId').sort({ createdAt: -1 }).lean();
+    const progress = await SessionProgress.find({ userId: user._id }).lean();
+    const totalCompleted = progress.reduce((acc, curr) => acc + curr.completedSessions, 0);
+    const avgProgress = progress.length > 0 ? Math.round(progress.reduce((acc, curr) => acc + parseInt(curr.progressPercentage), 0) / progress.length) : 0;
+    const lastActive = await WatchTime.findOne({ userId: user._id }).sort({ lastActive: -1 }).lean();
+
+    return {
+      userId: `USER-${user._id.toString().slice(-4).toUpperCase()}`,
+      email: user.email,
+      roadmapType: 'Psychologist',
+      sessionsCompleted: totalCompleted,
+      subscriptionPlan: sub ? `${(sub.planId as any)?.name} (${(sub.planId as any)?.type})` : 'Free',
+      status: user.status || 'active',
+      joinedDate: user.createdAt,
+      lastActive: lastActive ? lastActive.lastActive : user.updatedAt,
+      overallProgress: `${avgProgress}%`
+    };
+  },
+
+  async updateUserStatus(userId: string, status: 'active' | 'suspended') {
+    const user = await User.findOneAndUpdate({ _id: userId }, { status }, { new: true });
+    if (!user) throw ApiError.userNotFound();
+    return { id: user._id, status: user.status };
+  },
+
   async getProfile(adminId: string) {
     const admin = await User.findOne({ _id: adminId, role: 'admin', isDeleted: false }).lean();
     if (!admin) throw ApiError.userNotFound();
-    return { id: admin._id, name: `${admin.firstName} ${admin.lastName}`, email: admin.email, role: admin.role, avatar: admin.avatar };
+    return { 
+      id: admin._id, 
+      name: `${admin.firstName} ${admin.lastName}`, 
+      email: admin.email, 
+      phoneNumber: admin.phoneNumber || "", 
+      role: admin.role, 
+      avatar: admin.avatar 
+    };
   },
 
   async updateProfile(adminId: string, data: { name: string; phoneNumber?: string }, profilePicBuffer?: Buffer) {
-    // Already defined logic
+    const parts = data.name.trim().split(/\s+/);
+    const firstName = parts[0];
+    const lastName  = parts.slice(1).join(' ') || parts[0];
+    const updateData: Record<string, any> = { firstName, lastName };
+    if (data.phoneNumber) updateData.phoneNumber = data.phoneNumber;
+
+    if (profilePicBuffer) {
+      const existing = await User.findById(adminId).select('avatar').lean();
+      updateData.avatar = await uploadToCloudinary(profilePicBuffer, 'my-emdr/admin-avatars', `admin_avatar_${adminId}`);
+      if (existing?.avatar) deleteFromCloudinary(existing.avatar).catch(() => {});
+    }
+
+    const admin = await User.findOneAndUpdate({ _id: adminId, role: 'admin' }, updateData, { new: true }).lean();
+    if (!admin) throw ApiError.userNotFound();
     return { success: true };
   }
 };
