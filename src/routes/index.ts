@@ -25,6 +25,8 @@ import uploadRoutes from '../modules/upload/upload.routes';
 import calmPlaceRoutes from '../modules/calm-place/calmPlace.routes';
 import exposureRoutes from '../modules/exposure/exposure.routes';
 import cbtFormulationRoutes from '../modules/cbt-formulation/cbtFormulation.routes';
+import emdrSessionRoutes from '../modules/emdr-session/emdrSession.routes';
+import myTestsRoutes from '../modules/my-tests/myTests.routes';
 
 const router = Router();
 
@@ -53,5 +55,7 @@ router.use('/upload', uploadRoutes);
 router.use('/calm-place', calmPlaceRoutes);
 router.use('/exposure', exposureRoutes);
 router.use('/cbt-formulation', cbtFormulationRoutes);
+router.use('/emdr-session', emdrSessionRoutes);
+router.use('/my-tests', myTestsRoutes);
 
 export default router;

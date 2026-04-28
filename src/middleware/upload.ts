@@ -42,3 +42,9 @@ const mediaUploader = multer({
 
 export const uploadMediaFile = mediaUploader.single('file');
 
+/**
+ * Generic multer instance for custom field configurations.
+ */
+export const upload = mediaUploader;
+
+

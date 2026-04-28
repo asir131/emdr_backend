@@ -1,0 +1,549 @@
+{
+  "info": {
+    "name": "EMDR Session System",
+    "description": "Complete EMDR Session API endpoints with file upload support for target descriptions and freeze frames",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{authToken}}",
+        "type": "string"
+      }
+    ]
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:5000/api",
+      "type": "string"
+    },
+    {
+      "key": "authToken",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "sessionId",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "1. Start New Session",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "if (pm.response.code === 201) {",
+              "    const response = pm.response.json();",
+              "    pm.collectionVariables.set('sessionId', response.data._id);",
+              "    pm.environment.set('sessionId', response.data._id);",
+              "}"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"sessionType\": \"memory\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/emdr-session/start",
+          "host": ["{{baseUrl}}"],
+          "path": ["emdr-session", "start"]
+        },
+        "description": "Start a new EMDR session. Session types: memory, future, words, negative, addiction"
+      },
+      "response": []
+    },
+    {
+      "name": "2. Save Target (Text Only)",
+      "request": {
+        "method": "PATCH",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"targetDescription\": \"A traumatic memory from childhood when I felt abandoned\",\n  \"freezeFrame\": \"The moment I saw my parent walking away without looking back\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/emdr-session/{{sessionId}}/target",
+          "host": ["{{baseUrl}}"],
+          "path": ["emdr-session", "{{sessionId}}", "target"]
+        },
+        "description": "Save target description and freeze frame (Steps 1 & 2) - Text only version"
+      },
+      "response": []
+    },
+    {
+      "name": "2. Save Target (With File Upload)",
+      "request": {
+        "method": "PATCH",
+        "header": [],
+        "body": {
+          "mode": "formdata",
+          "formdata": [
+            {
+              "key": "targetDescription",
+              "value": "A traumatic memory from childhood when I felt abandoned",
+              "type": "text"
+            },
+            {
+              "key": "freezeFrame",
+              "value": "The moment I saw my parent walking away without looking back",
+              "type": "text"
+            },
+            {
+              "key": "targetFile",
+              "type": "file",
+              "src": [],
+              "description": "Optional: Upload image/audio file related to target"
+            },
+            {
+              "key": "freezeFrameFile",
+              "type": "file",
+              "src": [],
+              "description": "Optional: Upload image/audio file for freeze frame"
+            }
+          ]
+        },
+        "url": {
+          "raw": "{{baseUrl}}/emdr-session/{{sessionId}}/target",
+          "host": ["{{baseUrl}}"],
+          "path": ["emdr-session", "{{sessionId}}", "target"]
+        },
+        "description": "Save target description and freeze frame with optional file uploads (Steps 1 & 2)"
+      },
+      "response": []
+    },
+    {
+      "name": "3. Save Belief Pairs",
+      "request": {
+        "method": "PATCH",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"beliefPairs\": [\n    {\n      \"negativeBelief\": \"I am not good enough\",\n      \"positiveBelief\": \"I am worthy and capable\",\n      \"vocRating\": 3\n    },\n    {\n      \"negativeBelief\": \"I am powerless\",\n      \"positiveBelief\": \"I have control over my life\",\n      \"vocRating\": 4\n    }\n  ]\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/emdr-session/{{sessionId}}/beliefs",
+          "host": ["{{baseUrl}}"],
+          "path": ["emdr-session", "{{sessionId}}", "beliefs"]
+        },
+        "description": "Save belief pairs with VOC ratings (Steps 3-5). VOC rating: 1-7 (1=not true, 7=completely true)"
+      },
+      "response": []
+    },
+    {
+      "name": "4. Save Emotions",
+      "request": {
+        "method": "PATCH",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"primaryEmotion\": \"Fear and anxiety\",\n  \"additionalEmotions\": \"Sadness, shame, helplessness\",\n  \"bodyLocation\": \"Tightness in chest and throat, knot in stomach\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/emdr-session/{{sessionId}}/emotions",
+          "host": ["{{baseUrl}}"],
+          "path": ["emdr-session", "{{sessionId}}", "emotions"]
+        },
+        "description": "Save emotions and body location (Steps 6-8)"
+      },
+      "response": []
+    },
+    {
+      "name": "5. Save SUD Rating",
+      "request": {
+        "method": "PATCH",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"sudRating\": 8\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/emdr-session/{{sessionId}}/sud",
+          "host": ["{{baseUrl}}"],
+          "path": ["emdr-session", "{{sessionId}}", "sud"]
+        },
+        "description": "Save SUD rating (Step 9). SUD: 0-10 (0=no distress, 10=worst distress). Marks session as ready_for_bls"
+      },
+      "response": []
+    },
+    {
+      "name": "6. Save Addiction Context",
+      "request": {
+        "method": "PATCH",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"aspect\": \"The rush and anticipation before using\",\n  \"positiveFeeling\": \"Euphoric and relaxed\",\n  \"pfsRating\": 8,\n  \"associatedThoughts\": \"I deserve this, I need this to feel normal, nothing else matters\",\n  \"bodyLocation\": \"Warmth spreading through chest and head\",\n  \"visualization\": \"Golden warm light filling my body from center outward\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/emdr-session/{{sessionId}}/addiction",
+          "host": ["{{baseUrl}}"],
+          "path": ["emdr-session", "{{sessionId}}", "addiction"]
+        },
+        "description": "Save addiction context (for addiction session type only). PFS: 0-10. Marks session as ready_for_bls"
+      },
+      "response": []
+    },
+    {
+      "name": "7. Complete Session",
+      "request": {
+        "method": "PATCH",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/emdr-session/{{sessionId}}/complete",
+          "host": ["{{baseUrl}}"],
+          "path": ["emdr-session", "{{sessionId}}", "complete"]
+        },
+        "description": "Mark session as completed (called after BLS finishes)"
+      },
+      "response": []
+    },
+    {
+      "name": "8. Abandon Session",
+      "request": {
+        "method": "PATCH",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/emdr-session/{{sessionId}}/abandon",
+          "host": ["{{baseUrl}}"],
+          "path": ["emdr-session", "{{sessionId}}", "abandon"]
+        },
+        "description": "Abandon/discard a draft or in-progress session"
+      },
+      "response": []
+    },
+    {
+      "name": "9. Get Session by ID",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/emdr-session/{{sessionId}}",
+          "host": ["{{baseUrl}}"],
+          "path": ["emdr-session", "{{sessionId}}"]
+        },
+        "description": "Fetch a single session by ID"
+      },
+      "response": []
+    },
+    {
+      "name": "10. Get Latest Session",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/emdr-session/latest",
+          "host": ["{{baseUrl}}"],
+          "path": ["emdr-session", "latest"]
+        },
+        "description": "Get the user's most recent session (for resume functionality)"
+      },
+      "response": []
+    },
+    {
+      "name": "11. List All Sessions",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/emdr-session?page=1&limit=20",
+          "host": ["{{baseUrl}}"],
+          "path": ["emdr-session"],
+          "query": [
+            {
+              "key": "page",
+              "value": "1"
+            },
+            {
+              "key": "limit",
+              "value": "20"
+            },
+            {
+              "key": "status",
+              "value": "completed",
+              "disabled": true
+            }
+          ]
+        },
+        "description": "List all sessions with pagination. Optional status filter: in_progress, ready_for_bls, completed, abandoned"
+      },
+      "response": []
+    },
+    {
+      "name": "12. Delete Session",
+      "request": {
+        "method": "DELETE",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/emdr-session/{{sessionId}}",
+          "host": ["{{baseUrl}}"],
+          "path": ["emdr-session", "{{sessionId}}"]
+        },
+        "description": "Permanently delete a session (hard delete)"
+      },
+      "response": []
+    },
+    {
+      "name": "Complete Memory Session Flow",
+      "item": [
+        {
+          "name": "1. Start Memory Session",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    const response = pm.response.json();",
+                  "    pm.collectionVariables.set('sessionId', response.data._id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"sessionType\": \"memory\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/emdr-session/start",
+              "host": ["{{baseUrl}}"],
+              "path": ["emdr-session", "start"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "2. Save Target",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"targetDescription\": \"Car accident on highway\",\n  \"freezeFrame\": \"The moment of impact, glass shattering\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/emdr-session/{{sessionId}}/target",
+              "host": ["{{baseUrl}}"],
+              "path": ["emdr-session", "{{sessionId}}", "target"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "3. Save Beliefs",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"beliefPairs\": [\n    {\n      \"negativeBelief\": \"I am in danger\",\n      \"positiveBelief\": \"I am safe now\",\n      \"vocRating\": 2\n    }\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/emdr-session/{{sessionId}}/beliefs",
+              "host": ["{{baseUrl}}"],
+              "path": ["emdr-session", "{{sessionId}}", "beliefs"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "4. Save Emotions",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"primaryEmotion\": \"Terror and panic\",\n  \"additionalEmotions\": \"Helplessness\",\n  \"bodyLocation\": \"Racing heart, shallow breathing, trembling hands\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/emdr-session/{{sessionId}}/emotions",
+              "host": ["{{baseUrl}}"],
+              "path": ["emdr-session", "{{sessionId}}", "emotions"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "5. Save SUD",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"sudRating\": 9\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/emdr-session/{{sessionId}}/sud",
+              "host": ["{{baseUrl}}"],
+              "path": ["emdr-session", "{{sessionId}}", "sud"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "6. Complete Session",
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/emdr-session/{{sessionId}}/complete",
+              "host": ["{{baseUrl}}"],
+              "path": ["emdr-session", "{{sessionId}}", "complete"]
+            }
+          },
+          "response": []
+        }
+      ],
+      "description": "Complete flow for a memory-based EMDR session"
+    },
+    {
+      "name": "Complete Addiction Session Flow",
+      "item": [
+        {
+          "name": "1. Start Addiction Session",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    const response = pm.response.json();",
+                  "    pm.collectionVariables.set('sessionId', response.data._id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"sessionType\": \"addiction\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/emdr-session/start",
+              "host": ["{{baseUrl}}"],
+              "path": ["emdr-session", "start"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "2. Save Addiction Context",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"aspect\": \"The anticipation and ritual before drinking\",\n  \"positiveFeeling\": \"Calm and confident\",\n  \"pfsRating\": 7,\n  \"associatedThoughts\": \"This will make everything better, I can finally relax\",\n  \"bodyLocation\": \"Warmth in chest, tingling in fingertips\",\n  \"visualization\": \"Soft blue glow spreading from my center\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/emdr-session/{{sessionId}}/addiction",
+              "host": ["{{baseUrl}}"],
+              "path": ["emdr-session", "{{sessionId}}", "addiction"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "3. Complete Session",
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/emdr-session/{{sessionId}}/complete",
+              "host": ["{{baseUrl}}"],
+              "path": ["emdr-session", "{{sessionId}}", "complete"]
+            }
+          },
+          "response": []
+        }
+      ],
+      "description": "Complete flow for an addiction-based EMDR session"
+    }
+  ]
+}

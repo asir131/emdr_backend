@@ -1,0 +1,579 @@
+{
+  "info": {
+    "name": "My Tests System - Complete CRUD",
+    "description": "Production-level Category and Items management system with full CRUD operations",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{authToken}}",
+        "type": "string"
+      }
+    ]
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:5000/api",
+      "type": "string"
+    },
+    {
+      "key": "authToken",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "categoryId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "itemId",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "Categories",
+      "item": [
+        {
+          "name": "1. Create Category",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    const response = pm.response.json();",
+                  "    pm.collectionVariables.set('categoryId', response.data._id);",
+                  "    pm.environment.set('categoryId', response.data._id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"categoryName\": \"Weekly Health Tests\",\n  \"description\": \"My weekly health and wellness tests\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/my-tests/categories",
+              "host": ["{{baseUrl}}"],
+              "path": ["my-tests", "categories"]
+            },
+            "description": "Create a new test category"
+          },
+          "response": []
+        },
+        {
+          "name": "2. List All Categories",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/my-tests/categories?page=1&limit=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["my-tests", "categories"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "20"
+                },
+                {
+                  "key": "isActive",
+                  "value": "true",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "Get all categories with pagination"
+          },
+          "response": []
+        },
+        {
+          "name": "3. Get Category by ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/my-tests/categories/{{categoryId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["my-tests", "categories", "{{categoryId}}"]
+            },
+            "description": "Get a single category by ID"
+          },
+          "response": []
+        },
+        {
+          "name": "4. Update Category",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"categoryName\": \"Updated Category Name\",\n  \"description\": \"Updated description\",\n  \"isActive\": true\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/my-tests/categories/{{categoryId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["my-tests", "categories", "{{categoryId}}"]
+            },
+            "description": "Update category details"
+          },
+          "response": []
+        },
+        {
+          "name": "5. Get Category Stats",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/my-tests/categories/{{categoryId}}/stats",
+              "host": ["{{baseUrl}}"],
+              "path": ["my-tests", "categories", "{{categoryId}}", "stats"]
+            },
+            "description": "Get category statistics (total items, items by day, etc.)"
+          },
+          "response": []
+        },
+        {
+          "name": "6. Delete Category",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/my-tests/categories/{{categoryId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["my-tests", "categories", "{{categoryId}}"]
+            },
+            "description": "Delete category and all its items"
+          },
+          "response": []
+        }
+      ],
+      "description": "Category management endpoints"
+    },
+    {
+      "name": "Items",
+      "item": [
+        {
+          "name": "1. Create Item in Category",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    const response = pm.response.json();",
+                  "    pm.collectionVariables.set('itemId', response.data._id);",
+                  "    pm.environment.set('itemId', response.data._id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"itemName\": \"Blood Pressure Check\",\n  \"description\": \"Check BP in the morning before breakfast\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/my-tests/categories/{{categoryId}}/items",
+              "host": ["{{baseUrl}}"],
+              "path": ["my-tests", "categories", "{{categoryId}}", "items"]
+            },
+            "description": "Create a new item in a category. Day will be auto-calculated from creation date (Sunday-Saturday). You can also manually specify the day."
+          },
+          "response": []
+        },
+        {
+          "name": "2. List Items in Category",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/my-tests/categories/{{categoryId}}/items?page=1&limit=50",
+              "host": ["{{baseUrl}}"],
+              "path": ["my-tests", "categories", "{{categoryId}}", "items"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "50"
+                },
+                {
+                  "key": "day",
+                  "value": "Monday",
+                  "disabled": true
+                },
+                {
+                  "key": "isActive",
+                  "value": "true",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "Get all items in a specific category"
+          },
+          "response": []
+        },
+        {
+          "name": "3. List All User Items",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/my-tests/items?page=1&limit=50",
+              "host": ["{{baseUrl}}"],
+              "path": ["my-tests", "items"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "50"
+                },
+                {
+                  "key": "day",
+                  "value": "Monday",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "Get all items across all categories for the user"
+          },
+          "response": []
+        },
+        {
+          "name": "4. Get Item by ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/my-tests/items/{{itemId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["my-tests", "items", "{{itemId}}"]
+            },
+            "description": "Get a single item by ID"
+          },
+          "response": []
+        },
+        {
+          "name": "5. Update Item",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"itemName\": \"Updated Item Name\",\n  \"day\": \"Tuesday\",\n  \"description\": \"Updated description\",\n  \"isActive\": true\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/my-tests/items/{{itemId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["my-tests", "items", "{{itemId}}"]
+            },
+            "description": "Update item details"
+          },
+          "response": []
+        },
+        {
+          "name": "6. Delete Item",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/my-tests/items/{{itemId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["my-tests", "items", "{{itemId}}"]
+            },
+            "description": "Delete an item"
+          },
+          "response": []
+        }
+      ],
+      "description": "Item management endpoints"
+    },
+    {
+      "name": "Complete Workflow Examples",
+      "item": [
+        {
+          "name": "Example 1: Weekly Health Tests",
+          "item": [
+            {
+              "name": "1. Create Category",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "if (pm.response.code === 201) {",
+                      "    const response = pm.response.json();",
+                      "    pm.collectionVariables.set('categoryId', response.data._id);",
+                      "}"
+                    ],
+                    "type": "text/javascript"
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"categoryName\": \"Weekly Health Tests\",\n  \"description\": \"My weekly health monitoring routine\"\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/my-tests/categories",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["my-tests", "categories"]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "2. Add Monday Test",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"itemName\": \"Blood Pressure Check\",\n  \"description\": \"Morning check before breakfast\"\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/my-tests/categories/{{categoryId}}/items",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["my-tests", "categories", "{{categoryId}}", "items"]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "3. Add Wednesday Test",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"itemName\": \"Weight Measurement\",\n  \"description\": \"Weigh in the morning\"\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/my-tests/categories/{{categoryId}}/items",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["my-tests", "categories", "{{categoryId}}", "items"]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "4. Add Friday Test",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"itemName\": \"Blood Sugar Test\",\n  \"description\": \"Fasting blood sugar test\"\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/my-tests/categories/{{categoryId}}/items",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["my-tests", "categories", "{{categoryId}}", "items"]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "5. View All Items",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/my-tests/categories/{{categoryId}}/items",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["my-tests", "categories", "{{categoryId}}", "items"]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "6. View Category Stats",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/my-tests/categories/{{categoryId}}/stats",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["my-tests", "categories", "{{categoryId}}", "stats"]
+                }
+              },
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "Example 2: Daily Workout Routine",
+          "item": [
+            {
+              "name": "1. Create Category",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "if (pm.response.code === 201) {",
+                      "    const response = pm.response.json();",
+                      "    pm.collectionVariables.set('categoryId', response.data._id);",
+                      "}"
+                    ],
+                    "type": "text/javascript"
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"categoryName\": \"Daily Workout Routine\",\n  \"description\": \"My weekly exercise schedule\"\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/my-tests/categories",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["my-tests", "categories"]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "2. Add Cardio Day",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"itemName\": \"30 min Running\",\n  \"day\": \"Monday\",\n  \"description\": \"Morning run at 6 AM\"\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/my-tests/categories/{{categoryId}}/items",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["my-tests", "categories", "{{categoryId}}", "items"]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "3. Add Strength Day",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"itemName\": \"Upper Body Workout\",\n  \"day\": \"Tuesday\",\n  \"description\": \"Chest, shoulders, triceps\"\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/my-tests/categories/{{categoryId}}/items",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["my-tests", "categories", "{{categoryId}}", "items"]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "4. Filter by Day",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/my-tests/categories/{{categoryId}}/items?day=Monday",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["my-tests", "categories", "{{categoryId}}", "items"],
+                  "query": [
+                    {
+                      "key": "day",
+                      "value": "Monday"
+                    }
+                  ]
+                }
+              },
+              "response": []
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
