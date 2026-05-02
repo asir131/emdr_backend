@@ -19,9 +19,8 @@ export const journeyService = {
       .lean();
   },
 
-  async list(userId?: string) {
-    const filter = userId ? { createdBy: userId } : {};
-    return Journey.find(filter)
+  async list() {
+    return Journey.find({ isActive: true })
       .select('-imagePublicId')
       .populate('createdBy', 'firstName lastName')
       .sort({ createdAt: -1 })

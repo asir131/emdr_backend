@@ -1,67 +1,172 @@
 {
   "info": {
     "name": "PROGRESS-TRACKING",
-    "description": "Media Progress + Category Progress + Journey Progress",
+    "description": "Media Progress + Category Progress + Journey Progress + Session Progress",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "variable": [
-    { "key": "baseUrl",     "value": "https://your-tunnel.trycloudflare.com/api", "type": "string" },
-    { "key": "userToken",   "value": "", "type": "string" },
-    { "key": "mediaId",     "value": "", "type": "string" },
-    { "key": "categoryId",  "value": "", "type": "string" },
-    { "key": "journeyId",   "value": "", "type": "string" }
+    { "key": "baseUrl",    "value": "https://your-tunnel.trycloudflare.com/api", "type": "string" },
+    { "key": "userToken",  "value": "", "type": "string" },
+    { "key": "mediaId",    "value": "", "type": "string" },
+    { "key": "categoryId", "value": "", "type": "string" },
+    { "key": "journeyId",  "value": "", "type": "string" }
   ],
   "item": [
     {
-      "name": "Update Media Progress",
-      "request": {
-        "method": "PATCH",
-        "header": [
-          { "key": "Authorization", "value": "Bearer {{userToken}}" },
-          { "key": "Content-Type",  "value": "application/json" }
-        ],
-        "body": {
-          "mode": "raw",
-          "raw": "{\n  \"watchedSeconds\": 120,\n  \"totalSeconds\": 300\n}"
+      "name": "📹 Media Progress",
+      "item": [
+        {
+          "name": "Update Media Progress",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{userToken}}" },
+              { "key": "Content-Type",  "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"watchedSeconds\": 120,\n  \"totalSeconds\": 300\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/progress/media/{{mediaId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["progress", "media", "{{mediaId}}"]
+            },
+            "description": "Flutter video player থেকে প্রতি 10-15 সেকেন্ডে call করুন।\n\nwatchedSeconds = user কতক্ষণ দেখেছে\ntotalSeconds   = ভিডিওর মোট দৈর্ঘ্য\n\nBackend calculate করে:\n  percentage  = (120 / 300) * 100 = 40%\n  isCompleted = percentage >= 80"
+          }
+        }
+      ]
+    },
+    {
+      "name": "📂 Category Progress",
+      "item": [
+        {
+          "name": "Get Category Progress",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{userToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/progress/category/{{categoryId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["progress", "category", "{{categoryId}}"]
+            },
+            "description": "একটি category তে user কতটুকু complete করেছে।\n\nExample response:\n{\n  \"categoryProgress\": 60,\n  \"totalMedia\": 5,\n  \"completedMedia\": 3,\n  \"mediaList\": [...]\n}"
+          }
+        }
+      ]
+    },
+    {
+      "name": "🗺️ Journey Progress (Media-based)",
+      "item": [
+        {
+          "name": "Get Journey Progress",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{userToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/progress/journey/{{journeyId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["progress", "journey", "{{journeyId}}"]
+            },
+            "description": "Journey-এর সব category মিলিয়ে মোট progress।\n\nExample response:\n{\n  \"journeyProgress\": 45,\n  \"totalCategories\": 12,\n  \"completedCategories\": 5,\n  \"categories\": [...]\n}"
+          }
+        }
+      ]
+    },
+    {
+      "name": "🧠 Session Progress (EMDR Journey)",
+      "item": [
+        {
+          "name": "Update Session Progress",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const r = pm.response.json();",
+                  "if (r.success) {",
+                  "  console.log('Progress updated:', r.data.totalCompledSession);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{userToken}}" },
+              { "key": "Content-Type",  "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"journeyId\": \"{{journeyId}}\",\n  \"totalSession\": 10,\n  \"compledSession\": 6\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/session-progress/update",
+              "host": ["{{baseUrl}}"],
+              "path": ["session-progress", "update"]
+            },
+            "description": "একটি Journey-এর EMDR session progress update করুন।\n\nField গুলো:\n  journeyId      — Journey এর ObjectId\n  totalSession   — Journey তে মোট কতটি session আছে\n  compledSession — User কতটি session complete করেছে\n\nBackend calculate করে:\n  progressPercentage = Math.round((compledSession / totalSession) * 100) + '%'\n\nExample: totalSession=10, compledSession=6 → \"60%\"\n\nNote: compledSession > totalSession হলে validation error আসবে।\n\nExample response:\n{\n  \"success\": true,\n  \"data\": {\n    \"totalCompledSession\": \"60%\",\n    \"details\": {\n      \"totalSessions\": 10,\n      \"completedSessions\": 6\n    }\n  }\n}"
+          }
         },
-        "url": { "raw": "{{baseUrl}}/progress/media/{{mediaId}}", "host": ["{{baseUrl}}"], "path": ["progress","media","{{mediaId}}"] },
-        "description": "Call every 10-15 seconds from Flutter video player.\nwatchedSeconds = how many seconds user has watched\ntotalSeconds = full video duration\n\nBackend calculates: percentage = (120/300)*100 = 40%\nisCompleted = percentage >= 80"
-      }
+        {
+          "name": "Get Session Progress",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{userToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/session-progress/{{journeyId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["session-progress", "{{journeyId}}"]
+            },
+            "description": "একটি Journey-এ user এর EMDR session progress দেখুন।\n\nPath param:\n  journeyId — Journey এর ObjectId\n\nProgress না থাকলে 0% return করে (error দেয় না)।\n\nExample response (progress আছে):\n{\n  \"success\": true,\n  \"data\": {\n    \"totalCompledSession\": \"60%\",\n    \"details\": {\n      \"totalSessions\": 10,\n      \"completedSessions\": 6\n    }\n  }\n}\n\nExample response (progress নেই):\n{\n  \"success\": true,\n  \"data\": {\n    \"totalCompledSession\": \"0%\",\n    \"details\": {\n      \"totalSessions\": 0,\n      \"completedSessions\": 0\n    }\n  }\n}"
+          }
+        }
+      ]
     },
     {
-      "name": "Get Category Progress",
-      "request": {
-        "method": "GET",
-        "header": [{ "key": "Authorization", "value": "Bearer {{userToken}}" }],
-        "url": { "raw": "{{baseUrl}}/progress/category/{{categoryId}}", "host": ["{{baseUrl}}"], "path": ["progress","category","{{categoryId}}"] },
-        "description": "Returns how much % of a category the user has completed.\nExample response:\n{\n  categoryProgress: 60,\n  totalMedia: 5,\n  completedMedia: 3,\n  mediaList: [...]\n}"
-      }
-    },
-    {
-      "name": "Get Journey Progress",
-      "request": {
-        "method": "GET",
-        "header": [{ "key": "Authorization", "value": "Bearer {{userToken}}" }],
-        "url": { "raw": "{{baseUrl}}/progress/journey/{{journeyId}}", "host": ["{{baseUrl}}"], "path": ["progress","journey","{{journeyId}}"] },
-        "description": "Returns overall journey progress across all categories.\nExample response:\n{\n  journeyProgress: 45,\n  totalCategories: 12,\n  completedCategories: 5,\n  categories: [...]\n}"
-      }
-    },
-    {
-      "name": "Create Journey (with categoryIds)",
-      "event": [{ "listen": "test", "script": { "exec": ["const r=pm.response.json(); if(r.success) pm.collectionVariables.set('journeyId', r.data._id);"] } }],
-      "request": {
-        "method": "POST",
-        "header": [
-          { "key": "Authorization", "value": "Bearer {{userToken}}" },
-          { "key": "Content-Type",  "value": "application/json" }
-        ],
-        "body": {
-          "mode": "raw",
-          "raw": "{\n  \"journeyName\": \"Healing Journey\",\n  \"description\": \"A 12-week EMDR healing program\",\n  \"imageUrl\": \"https://res.cloudinary.com/dbglkfj2z/image/upload/v1/my-emdr/journey.jpg\",\n  \"categoryIds\": [\n    \"{{categoryId}}\"\n  ]\n}"
-        },
-        "url": { "raw": "{{baseUrl}}/journeys", "host": ["{{baseUrl}}"], "path": ["journeys"] },
-        "description": "categoryIds = array of category ObjectIds to link to this journey"
-      }
+      "name": "🛠️ Setup — Create Journey",
+      "item": [
+        {
+          "name": "Create Journey",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const r = pm.response.json();",
+                  "if (r.success) pm.collectionVariables.set('journeyId', r.data._id);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{userToken}}" },
+              { "key": "Content-Type",  "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"journeyName\": \"Healing Journey\",\n  \"description\": \"A 12-week EMDR healing program\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/journeys",
+              "host": ["{{baseUrl}}"],
+              "path": ["journeys"]
+            },
+            "description": "Test এর জন্য একটি Journey তৈরি করুন।\nTest script স্বয়ংক্রিয়ভাবে journeyId variable সেট করে দেবে।"
+          }
+        }
+      ]
     }
   ]
 }

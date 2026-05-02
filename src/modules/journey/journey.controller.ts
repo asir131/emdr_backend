@@ -13,9 +13,9 @@ export const journeyController = {
     } catch (e) { next(e); }
   },
 
-  list: async (req: AuthRequest, res: Response, next: NextFunction) => {
+  list: async (_req: AuthRequest, res: Response, next: NextFunction) => {
     try {
-      ok(res, await journeyService.list(req.user!.userId));
+      ok(res, await journeyService.list());
     } catch (e) { next(e); }
   },
 

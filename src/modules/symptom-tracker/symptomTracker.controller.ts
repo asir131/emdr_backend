@@ -7,47 +7,35 @@ const respond = (res: Response, data: any, status = 200) =>
 
 export const symptomTrackerController = {
 
-  // ── PUBLIC CONFIG ────────────────────────────────────────────────────────────
-
   listConfigs: async (_req: Request, res: Response, next: NextFunction) => {
-    try {
-      respond(res, await svc.listConfigs());
-    } catch (e) { next(e); }
+    try { respond(res, await svc.listConfigs()); }
+    catch (e) { next(e); }
   },
 
   getConfigByType: async (req: Request, res: Response, next: NextFunction) => {
-    try {
-      respond(res, await svc.getConfigByType(req.params.type));
-    } catch (e) { next(e); }
+    try { respond(res, await svc.getConfigByType(req.params.type)); }
+    catch (e) { next(e); }
   },
 
-  // ── ADMIN CONFIG ─────────────────────────────────────────────────────────────
-
   listConfigsAdmin: async (_req: Request, res: Response, next: NextFunction) => {
-    try {
-      respond(res, await svc.listConfigsAdmin());
-    } catch (e) { next(e); }
+    try { respond(res, await svc.listConfigsAdmin()); }
+    catch (e) { next(e); }
   },
 
   createConfig: async (req: AuthRequest, res: Response, next: NextFunction) => {
-    try {
-      respond(res, await svc.createConfig(req.body, req.user!.userId), 201);
-    } catch (e) { next(e); }
+    try { respond(res, await svc.createConfig(req.body, req.user!.userId), 201); }
+    catch (e) { next(e); }
   },
 
   updateConfig: async (req: AuthRequest, res: Response, next: NextFunction) => {
-    try {
-      respond(res, await svc.updateConfig(req.params.type, req.body, req.user!.userId));
-    } catch (e) { next(e); }
+    try { respond(res, await svc.updateConfig(req.params.type, req.body, req.user!.userId)); }
+    catch (e) { next(e); }
   },
 
   deleteConfig: async (req: Request, res: Response, next: NextFunction) => {
-    try {
-      respond(res, await svc.deleteConfig(req.params.type));
-    } catch (e) { next(e); }
+    try { respond(res, await svc.deleteConfig(req.params.type)); }
+    catch (e) { next(e); }
   },
-
-  // ── USER SUBMISSION ──────────────────────────────────────────────────────────
 
   submit: async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
@@ -69,9 +57,8 @@ export const symptomTrackerController = {
   },
 
   getSubmissionById: async (req: AuthRequest, res: Response, next: NextFunction) => {
-    try {
-      respond(res, await svc.getSubmissionById(req.params.id, req.user!.userId));
-    } catch (e) { next(e); }
+    try { respond(res, await svc.getSubmissionById(req.params.id, req.user!.userId)); }
+    catch (e) { next(e); }
   },
 
   getTrend: async (req: AuthRequest, res: Response, next: NextFunction) => {
@@ -90,5 +77,22 @@ export const symptomTrackerController = {
       const { trackerType } = req.query as Record<string, string>;
       respond(res, await svc.getLatest(req.user!.userId, trackerType));
     } catch (e) { next(e); }
+  },
+
+  adminListSubmissions: async (req: AuthRequest, res: Response, next: NextFunction) => {
+    try {
+      const { trackerType, userId, page, limit } = req.query as Record<string, string>;
+      respond(res, await svc.adminListSubmissions({
+        trackerType,
+        userId,
+        page : page  ? parseInt(page,  10) : 1,
+        limit: limit ? parseInt(limit, 10) : 20,
+      }));
+    } catch (e) { next(e); }
+  },
+
+  adminStats: async (_req: Request, res: Response, next: NextFunction) => {
+    try { respond(res, await svc.adminStats()); }
+    catch (e) { next(e); }
   },
 };

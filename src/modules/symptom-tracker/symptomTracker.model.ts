@@ -1,8 +1,5 @@
 import mongoose, { Schema, Document, Types } from 'mongoose';
 
-// ─────────────────────────────────────────────────────────────────────────────
-// TRACKER CONFIG — admin-managed tracker definitions
-// ─────────────────────────────────────────────────────────────────────────────
 
 export interface ITrackerItem {
   text   : string;
@@ -103,7 +100,6 @@ const symptomTrackerConfigSchema = new Schema<ISymptomTrackerConfig>(
   { timestamps: true }
 );
 
-symptomTrackerConfigSchema.index({ trackerType: 1 });
 symptomTrackerConfigSchema.index({ isActive: 1, createdAt: -1 });
 
 export const SymptomTrackerConfig = mongoose.model<ISymptomTrackerConfig>(
@@ -111,9 +107,6 @@ export const SymptomTrackerConfig = mongoose.model<ISymptomTrackerConfig>(
   symptomTrackerConfigSchema
 );
 
-// ─────────────────────────────────────────────────────────────────────────────
-// SUBMISSION — one record per user per tracker completion
-// ─────────────────────────────────────────────────────────────────────────────
 
 export interface IItemScore {
   itemIndex: number;   // 0-based index into config.items
