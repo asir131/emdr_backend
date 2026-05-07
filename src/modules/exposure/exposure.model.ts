@@ -3,17 +3,27 @@ import mongoose, { Schema, Document } from 'mongoose';
 /* ── Hierarchy step (sub-document) ──────────────────────────── */
 export interface IHierarchyStep {
   step: string;
-  suds: number;       // Subjective Units of Distress Scale (0-10)
+  suds: number;           // original SUDS when plan was created (fixed)
+  originalSuds: number;   // alias kept for clarity — same as suds at creation
+  currentSuds?: number;   // latest SUDS from most recent weekly review
   completed: boolean;
   completedAt?: Date;
+  attempts: number;       // total practice attempts logged
+  mastered: boolean;      // true when currentSuds ≤ 2
+  plannedDay?: string;    // day user plans to practice next
 }
 
 const hierarchyStepSchema = new Schema<IHierarchyStep>(
   {
-    step:        { type: String, required: true, trim: true },
-    suds:        { type: Number, required: true, min: 0, max: 10 },
-    completed:   { type: Boolean, default: false },
-    completedAt: { type: Date },
+    step:         { type: String, required: true, trim: true },
+    suds:         { type: Number, required: true, min: 0, max: 10 },
+    originalSuds: { type: Number, required: true, min: 0, max: 10 },
+    currentSuds:  { type: Number, min: 0, max: 10 },
+    completed:    { type: Boolean, default: false },
+    completedAt:  { type: Date },
+    attempts:     { type: Number, default: 0, min: 0 },
+    mastered:     { type: Boolean, default: false },
+    plannedDay:   { type: String, trim: true },
   },
   { _id: true }      // each step gets its own _id for easy referencing
 );

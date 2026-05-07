@@ -13,9 +13,17 @@ export const journeyController = {
     } catch (e) { next(e); }
   },
 
-  list: async (_req: AuthRequest, res: Response, next: NextFunction) => {
+  list: async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
-      ok(res, await journeyService.list());
+      // Pass the logged-in user's ID to filter their journeys
+      ok(res, await journeyService.list(req.user!.userId));
+    } catch (e) { next(e); }
+  },
+
+  // Admin only - list all journeys from all users
+  listAll: async (_req: AuthRequest, res: Response, next: NextFunction) => {
+    try {
+      ok(res, await journeyService.listAll());
     } catch (e) { next(e); }
   },
 

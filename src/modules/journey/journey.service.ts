@@ -19,7 +19,23 @@ export const journeyService = {
       .lean();
   },
 
-  async list() {
+  async list(userId?: string) {
+    const filter: any = { isActive: true };
+    
+    // If userId is provided, filter by createdBy
+    if (userId) {
+      filter.createdBy = userId;
+    }
+    
+    return Journey.find(filter)
+      .select('-imagePublicId')
+      .populate('createdBy', 'firstName lastName')
+      .sort({ createdAt: -1 })
+      .lean();
+  },
+
+  // Admin only - list all journeys from all users
+  async listAll() {
     return Journey.find({ isActive: true })
       .select('-imagePublicId')
       .populate('createdBy', 'firstName lastName')

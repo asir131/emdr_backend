@@ -32,7 +32,11 @@ export const exposureService = {
       hierarchy: sortedHierarchy.map(h => ({
         step: h.step,
         suds: h.suds,
+        originalSuds: h.suds,   // fixed reference point for SUDS improvement tracking
+        currentSuds: undefined,
         completed: false,
+        attempts: 0,
+        mastered: false,
       })),
       currentWeek: 1,
       progressPercent: 0,

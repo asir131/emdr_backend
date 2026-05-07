@@ -18,6 +18,7 @@ const envSchema = z.object({
   EMAIL_PASS: z.string().optional(),
   EMAIL_FROM: z.string().optional(),
   EMAIL_FROM_NAME: z.string().optional(),
+  SKIP_EMAIL_SENDING: z.string().optional(), // Set to 'true' to skip email sending in development
 
   FIREBASE_PROJECT_ID: z.string().optional(),
   FIREBASE_CLIENT_EMAIL: z.string().optional(),

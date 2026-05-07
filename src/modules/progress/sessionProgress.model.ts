@@ -45,4 +45,8 @@ const sessionProgressSchema = new Schema<ISessionProgress>(
 // One progress record per user per journey
 sessionProgressSchema.index({ userId: 1, journeyId: 1 }, { unique: true });
 
+// IMPORTANT: If you're getting duplicate key errors on userId field,
+// you need to drop the old userId_1 index from MongoDB:
+// db.sessionprogresses.dropIndex("userId_1")
+
 export const SessionProgress = mongoose.model<ISessionProgress>('SessionProgress', sessionProgressSchema);

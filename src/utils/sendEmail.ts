@@ -222,6 +222,15 @@ const emailTemplate = (title: string, bodyContent: string): string => `<!DOCTYPE
 </html>`;
 
 export const sendEmail = async (options: EmailOptions): Promise<void> => {
+  // Skip email sending in development mode if flag is set
+  if (env.NODE_ENV === 'development' && env.SKIP_EMAIL_SENDING === 'true') {
+    console.log('📧 [DEV MODE] Email sending skipped');
+    console.log('   To:', options.to);
+    console.log('   Subject:', options.subject);
+    console.log('   Text:', options.text);
+    return;
+  }
+
   try {
     const transporter = createTransporter();
 
@@ -236,8 +245,27 @@ export const sendEmail = async (options: EmailOptions): Promise<void> => {
     console.log(`📧 Email sent to ${options.to} — ID: ${info.messageId}`);
     if (info.rejected?.length) console.warn('❌ Rejected:', info.rejected);
   } catch (error: any) {
-    console.error('❌ Email sending failed:', error?.message || error);
-    throw new Error('Failed to send email: ' + (error?.message || 'Unknown error'));
+    console.error('❌ Email sending failed:');
+    console.error('   Error Code:', error?.code);
+    console.error('   Error Message:', error?.message);
+    console.error('   Command:', error?.command);
+    console.error('   Response:', error?.response);
+    console.error('   Full Error:', error);
+
+    // Provide specific error messages based on error code
+    let errorMessage = 'Failed to send email';
+    
+    if (error?.code === 'EAUTH') {
+      errorMessage = 'Email authentication failed. Please check your email credentials.';
+    } else if (error?.code === 'ESOCKET' || error?.code === 'ETIMEDOUT') {
+      errorMessage = 'Email server connection timeout. Please check your network connection.';
+    } else if (error?.code === 'ECONNREFUSED') {
+      errorMessage = 'Email server refused connection. Please check SMTP settings.';
+    } else if (error?.message) {
+      errorMessage = `Failed to send email: ${error.message}`;
+    }
+
+    throw new Error(errorMessage);
   }
 };
 

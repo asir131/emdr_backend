@@ -1,0 +1,452 @@
+{
+	"info": {
+		"_postman_id": "weekly-review-system-id",
+		"name": "WEEKLY-REVIEW-SYSTEM",
+		"description": "API collection for the Weekly Progress Review chatbot system. Covers loading plan data, saving full review sessions, real-time step updates, and review history.",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Exposure Plan (Prerequisites)",
+			"item": [
+				{
+					"name": "1. Get Available Behaviors",
+					"request": {
+						"method": "GET",
+						"header": [ 
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/exposure/behaviors",
+							"host": ["{{baseUrl}}"],
+							"path": ["exposure", "behaviors"]
+						},
+						"description": "Get the list of pre-defined behaviors for exposure therapy."
+					},
+					"response": []
+				},
+				{
+					"name": "2. Create Exposure Plan",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"const res = pm.response.json();",
+									"if (res.success && res.data._id) {",
+									"  pm.collectionVariables.set('planId', res.data._id);",
+									"  console.log('planId saved:', res.data._id);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"selectedBehavior\": \"Avoiding social situations\",\n  \"hierarchy\": [\n    { \"step\": \"Say hello to a cashier at the shop\", \"suds\": 3 },\n    { \"step\": \"Make small talk with a colleague at the coffee machine\", \"suds\": 5 },\n    { \"step\": \"Attend a small team meeting and contribute one comment\", \"suds\": 7 },\n    { \"step\": \"Join a social lunch with colleagues\", \"suds\": 8 },\n    { \"step\": \"Attend a networking event for 30 minutes\", \"suds\": 10 }\n  ]\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/exposure/plan",
+							"host": ["{{baseUrl}}"],
+							"path": ["exposure", "plan"]
+						},
+						"description": "Creates a new exposure plan. The test script auto-saves the planId to collection variable."
+					},
+					"response": []
+				},
+				{
+					"name": "3. Get Plan Details",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/exposure/plan/{{planId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["exposure", "plan", "{{planId}}"]
+						},
+						"description": "Get full plan details including hierarchy with originalSuds, currentSuds, mastered, attempts fields."
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Weekly Review (Auto - No planId)",
+			"description": "These endpoints automatically use the user's latest active plan. No planId needed!",
+			"item": [
+				{
+					"name": "1. Load Current Week Review (Auto)",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/exposure/weekly-review",
+							"host": ["{{baseUrl}}"],
+							"path": ["exposure", "weekly-review"]
+						},
+						"description": "🆕 NO PLANID NEEDED! Automatically loads the user's latest active plan and current week review.\n\nBackend finds the most recent plan with status 'not_started' or 'in_progress'.\n\nResponse shape:\n{\n  plan: { _id, selectedBehavior, currentWeek, status, hierarchy[] },\n  review: WeeklyReview | null\n}"
+					},
+					"response": []
+				},
+				{
+					"name": "2. Real-time Step Update (Auto)",
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"weekNumber\": 1,\n  \"stepIndex\": 0,\n  \"status\": \"completed\",\n  \"sudsRating\": 4,\n  \"problemType\": \"anticipation\",\n  \"plannedDay\": \"Monday\",\n  \"notes\": \"Felt nervous but managed to say hello\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/exposure/weekly-review/step",
+							"host": ["{{baseUrl}}"],
+							"path": ["exposure", "weekly-review", "step"]
+						},
+						"description": "🆕 NO PLANID NEEDED! Updates a step review for the user's active plan.\n\nstatus options: 'completed' | 'in-progress' | 'not-started'\nproblemType options: 'anticipation' | 'during' | 'physical' | 'thoughts' | 'other'\nplannedDay options: 'Monday' | 'Tuesday' | 'Wednesday' | 'Thursday' | 'Friday' | 'Weekend' | 'Multiple'"
+					},
+					"response": []
+				},
+				{
+					"name": "3. Save Full Review Session (Auto)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"weekNumber\": 1,\n  \"overallFeeling\": \"mixed\",\n  \"stepReviews\": [\n    {\n      \"stepIndex\": 0,\n      \"status\": \"completed\",\n      \"sudsRating\": 2,\n      \"problemType\": \"anticipation\",\n      \"plannedDay\": \"Monday\",\n      \"notes\": \"Felt nervous but managed well\"\n    },\n    {\n      \"stepIndex\": 1,\n      \"status\": \"completed\",\n      \"sudsRating\": 4,\n      \"problemType\": \"during\",\n      \"plannedDay\": \"Multiple\"\n    },\n    {\n      \"stepIndex\": 2,\n      \"status\": \"in-progress\",\n      \"sudsRating\": 7,\n      \"problemType\": \"thoughts\",\n      \"plannedDay\": \"Thursday\"\n    },\n    {\n      \"stepIndex\": 3,\n      \"status\": \"not-started\",\n      \"plannedDay\": \"Friday\"\n    },\n    {\n      \"stepIndex\": 4,\n      \"status\": \"not-started\"\n    }\n  ]\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/exposure/weekly-review",
+							"host": ["{{baseUrl}}"],
+							"path": ["exposure", "weekly-review"]
+						},
+						"description": "🆕 NO PLANID NEEDED! Saves the complete review session for the user's active plan.\n\noverallFeeling options: 'good' | 'challenging' | 'mixed' | 'unable'"
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Weekly Review (With planId)",
+			"item": [
+				{
+					"name": "1. Load Current Week Review (Page Load)",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/exposure/plan/{{planId}}/weekly-review",
+							"host": ["{{baseUrl}}"],
+							"path": ["exposure", "plan", "{{planId}}", "weekly-review"]
+						},
+						"description": "Called on page load. Returns the plan data (hierarchy with originalSuds/currentSuds) and the current week's review if it exists. Returns review: null if no review started yet.\n\nResponse shape:\n{\n  plan: { _id, selectedBehavior, currentWeek, status, hierarchy[] },\n  review: WeeklyReview | null\n}"
+					},
+					"response": []
+				},
+				{
+					"name": "2. Real-time Step Update (During Chatbot)",
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"weekNumber\": 1,\n  \"stepIndex\": 0,\n  \"status\": \"completed\",\n  \"sudsRating\": 4,\n  \"problemType\": \"anticipation\",\n  \"plannedDay\": \"Monday\",\n  \"notes\": \"Felt nervous but managed to say hello\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/exposure/plan/{{planId}}/weekly-review/step",
+							"host": ["{{baseUrl}}"],
+							"path": ["exposure", "plan", "{{planId}}", "weekly-review", "step"]
+						},
+						"description": "Called in real-time as the user reviews each step in the chatbot. Creates the review document if it doesn't exist yet.\n\nstatus options: 'completed' | 'in-progress' | 'not-started'\nproblemType options: 'anticipation' | 'during' | 'physical' | 'thoughts' | 'other'\nplannedDay options: 'Monday' | 'Tuesday' | 'Wednesday' | 'Thursday' | 'Friday' | 'Weekend' | 'Multiple'"
+					},
+					"response": []
+				},
+				{
+					"name": "2b. Step Update - Not Started (Plan Day)",
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"weekNumber\": 1,\n  \"stepIndex\": 1,\n  \"status\": \"not-started\",\n  \"plannedDay\": \"Wednesday\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/exposure/plan/{{planId}}/weekly-review/step",
+							"host": ["{{baseUrl}}"],
+							"path": ["exposure", "plan", "{{planId}}", "weekly-review", "step"]
+						},
+						"description": "When user hasn't tried a step yet — just saves the planned day for next week."
+					},
+					"response": []
+				},
+				{
+					"name": "2c. Step Update - In Progress (High SUDS)",
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"weekNumber\": 1,\n  \"stepIndex\": 2,\n  \"status\": \"in-progress\",\n  \"sudsRating\": 7,\n  \"problemType\": \"thoughts\",\n  \"notes\": \"Tried but left early due to anxiety\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/exposure/plan/{{planId}}/weekly-review/step",
+							"host": ["{{baseUrl}}"],
+							"path": ["exposure", "plan", "{{planId}}", "weekly-review", "step"]
+						},
+						"description": "When user tried but couldn't complete the step. sudsRating still gets saved and mastered will be false."
+					},
+					"response": []
+				},
+				{
+					"name": "3. Save Full Review Session (Session End)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"weekNumber\": 1,\n  \"overallFeeling\": \"mixed\",\n  \"stepReviews\": [\n    {\n      \"stepIndex\": 0,\n      \"status\": \"completed\",\n      \"sudsRating\": 2,\n      \"problemType\": \"anticipation\",\n      \"plannedDay\": \"Monday\",\n      \"notes\": \"Felt nervous but managed well\"\n    },\n    {\n      \"stepIndex\": 1,\n      \"status\": \"completed\",\n      \"sudsRating\": 4,\n      \"problemType\": \"during\",\n      \"plannedDay\": \"Multiple\"\n    },\n    {\n      \"stepIndex\": 2,\n      \"status\": \"in-progress\",\n      \"sudsRating\": 7,\n      \"problemType\": \"thoughts\",\n      \"plannedDay\": \"Thursday\"\n    },\n    {\n      \"stepIndex\": 3,\n      \"status\": \"not-started\",\n      \"plannedDay\": \"Friday\"\n    },\n    {\n      \"stepIndex\": 4,\n      \"status\": \"not-started\"\n    }\n  ]\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/exposure/plan/{{planId}}/weekly-review",
+							"host": ["{{baseUrl}}"],
+							"path": ["exposure", "plan", "{{planId}}", "weekly-review"]
+						},
+						"description": "Called at the end of the chatbot session. Saves the complete review, calculates summary stats (avgSudsReduction, completedSteps, attemptedSteps), syncs hierarchy fields (currentSuds, mastered, attempts) back to the ExposurePlan, and advances currentWeek if all attempted steps are mastered.\n\noverallFeeling options: 'good' | 'challenging' | 'mixed' | 'unable'"
+					},
+					"response": []
+				},
+				{
+					"name": "4. Get Review History",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/exposure/plan/{{planId}}/weekly-review/history",
+							"host": ["{{baseUrl}}"],
+							"path": ["exposure", "plan", "{{planId}}", "weekly-review", "history"]
+						},
+						"description": "Returns all weekly reviews for a plan sorted by weekNumber ascending. Useful for showing progress over time.\n\nResponse shape:\n{\n  planId, selectedBehavior, totalWeeks,\n  reviews: [ WeeklyReview[] ]\n}"
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Week 2 Flow (Example)",
+			"item": [
+				{
+					"name": "Load Week 2 Review",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/exposure/plan/{{planId}}/weekly-review",
+							"host": ["{{baseUrl}}"],
+							"path": ["exposure", "plan", "{{planId}}", "weekly-review"]
+						},
+						"description": "After week 1 is completed, currentWeek on the plan advances. This same endpoint now returns week 2 data with updated currentSuds values from week 1."
+					},
+					"response": []
+				},
+				{
+					"name": "Save Week 2 Review",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"weekNumber\": 2,\n  \"overallFeeling\": \"good\",\n  \"stepReviews\": [\n    {\n      \"stepIndex\": 0,\n      \"status\": \"completed\",\n      \"sudsRating\": 1,\n      \"notes\": \"Feels routine now!\"\n    },\n    {\n      \"stepIndex\": 1,\n      \"status\": \"completed\",\n      \"sudsRating\": 2,\n      \"plannedDay\": \"Multiple\"\n    },\n    {\n      \"stepIndex\": 2,\n      \"status\": \"completed\",\n      \"sudsRating\": 5,\n      \"problemType\": \"physical\",\n      \"plannedDay\": \"Tuesday\"\n    }\n  ]\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/exposure/plan/{{planId}}/weekly-review",
+							"host": ["{{baseUrl}}"],
+							"path": ["exposure", "plan", "{{planId}}", "weekly-review"]
+						},
+						"description": "Week 2 review. Steps 0 and 1 now have sudsRating ≤ 2 so mastered=true will be set on the hierarchy."
+					},
+					"response": []
+				}
+			]
+		}
+	],
+	"variable": [
+		{
+			"key": "token",
+			"value": "YOUR_JWT_TOKEN_HERE"
+		},
+		{
+			"key": "baseUrl",
+			"value": "http://localhost:5005/api"
+		},
+		{
+			"key": "planId",
+			"value": "PLAN_ID_HERE"
+		}
+	]
+}

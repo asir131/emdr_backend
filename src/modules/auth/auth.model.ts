@@ -29,6 +29,7 @@ export interface IUser extends Document {
   privacyAcceptedAt?: Date;
   fcmToken?: string;
   fcmPlatform?: 'android' | 'ios' | 'web';
+  status: 'active' | 'suspended';
   createdAt: Date;
   updatedAt: Date;
 }

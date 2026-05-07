@@ -13,27 +13,82 @@ export const sessionProgressService = {
     const percentageValue = totalSession > 0 ? Math.round((compledSession / totalSession) * 100) : 0;
     const progressPercentage = `${percentageValue}%`;
 
-    const progress = await SessionProgress.findOneAndUpdate(
-      { userId, journeyId },
-      {
-        userId,
-        journeyId,
-        totalSessions:     totalSession,
-        completedSessions: compledSession,
-        progressPercentage,
-      },
-      { upsert: true, new: true, runValidators: true }
-    ).lean();
+    try {
+      const progress = await SessionProgress.findOneAndUpdate(
+        { userId, journeyId },
+        {
+          $set: {
+            totalSessions:     totalSession,
+            completedSessions: compledSession,
+            progressPercentage,
+          }
+        },
+        { upsert: true, new: true, runValidators: true, setDefaultsOnInsert: true }
+      ).lean();
 
-    logger.info('Session progress updated', { userId, journeyId, progressPercentage });
-    
-    return {
-      totalCompledSession: progressPercentage,
-      details: {
-        totalSessions:     progress?.totalSessions,
-        completedSessions: progress?.completedSessions
+      logger.info('Session progress updated', { userId, journeyId, progressPercentage });
+      
+      return {
+        totalCompledSession: progressPercentage,
+        details: {
+          totalSessions:     progress?.totalSessions,
+          completedSessions: progress?.completedSessions
+        }
+      };
+    } catch (error: any) {
+      // Handle duplicate key error (old index issue)
+      if (error.code === 11000) {
+        logger.warn('Duplicate key error detected, retrying with update only', { userId, journeyId });
+        
+        // Try update without upsert
+        const progress = await SessionProgress.findOneAndUpdate(
+          { userId, journeyId },
+          {
+            $set: {
+              totalSessions:     totalSession,
+              completedSessions: compledSession,
+              progressPercentage,
+            }
+          },
+          { new: true, runValidators: true }
+        ).lean();
+
+        if (!progress) {
+          // Record doesn't exist, try to create manually
+          logger.warn('Record not found, attempting manual creation', { userId, journeyId });
+          
+          const newProgress = await SessionProgress.create({
+            userId,
+            journeyId,
+            totalSessions: totalSession,
+            completedSessions: compledSession,
+            progressPercentage,
+          });
+
+          return {
+            totalCompledSession: progressPercentage,
+            details: {
+              totalSessions: newProgress.totalSessions,
+              completedSessions: newProgress.completedSessions
+            }
+          };
+        }
+
+        logger.info('Session progress updated (retry successful)', { userId, journeyId, progressPercentage });
+        
+        return {
+          totalCompledSession: progressPercentage,
+          details: {
+            totalSessions:     progress.totalSessions,
+            completedSessions: progress.completedSessions
+          }
+        };
       }
-    };
+      
+      // Re-throw other errors
+      logger.error('Failed to update session progress', { error: error.message, userId, journeyId });
+      throw error;
+    }
   },
 
   /**
