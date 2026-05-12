@@ -1,4 +1,5 @@
 import { Assessment, SeverityLevel } from './assessment.model';
+import { User } from '../auth/auth.model';
 import { ApiError } from '../../utils/ApiError';
 
 const getPHQ9Severity = (score: number): SeverityLevel => {
@@ -61,9 +62,14 @@ export const assessmentService = {
        throw ApiError.validationError('Your assessment score indicates a high risk level. Please consult a professional.');
     }
 
+    // Get user email
+    const User = (await import('../auth/auth.model')).User;
+    const user = await User.findById(userId).select('email');
+    if (!user) throw ApiError.notFound('User not found');
+
     const assessment = await Assessment.findOneAndUpdate(
       { userId, isCompleted: false },
-      { phq9Answers, phq9Score, phq9Severity, currentStep: 'gad7' },
+      { phq9Answers, phq9Score, phq9Severity, currentStep: 'gad7', email: user.email },
       { upsert: true, new: true }
     );
 
@@ -126,8 +132,14 @@ export const assessmentService = {
     const gad7Score = gad7Answers.reduce((a, b) => a + b, 0);
     const des11Score = Math.round(avg(des11Answers) * 10) / 10;
 
+    // Get user email
+    const User = (await import('../auth/auth.model')).User;
+    const user = await User.findById(userId).select('email');
+    if (!user) throw ApiError.notFound('User not found');
+
     const assessment = new Assessment({
       userId,
+      email: user.email,
       phq9Answers, phq9Score, phq9Severity: getPHQ9Severity(phq9Score),
       gad7Answers, gad7Score, gad7Severity: getGAD7Severity(gad7Score),
       des11Answers, des11Score,
@@ -149,6 +161,36 @@ export const assessmentService = {
   },
 
   async getLatestResult(userId: string) {
-    return Assessment.findOne({ userId, isCompleted: true }).sort({ createdAt: -1 }).lean();
+    const assessment = await Assessment.findOne({ userId, isCompleted: true })
+      .sort({ createdAt: -1 })
+      .lean<any>();
+
+    if (!assessment) return null;
+
+    // Get user email
+    const user = await User.findById(userId).select('email').lean();
+    assessment.email = user?.email || '';
+
+    // Set default status if missing
+    if (!assessment.status) {
+      assessment.status = 'pending';
+      await Assessment.updateOne({ _id: assessment._id }, { $set: { email: assessment.email, status: 'pending' } });
+    }
+
+    return assessment;
+  },
+
+  async updateStatus(assessmentId: string, status: 'pending' | 'approved' | 'cancelled') {
+    const assessment = await Assessment.findByIdAndUpdate(
+      assessmentId,
+      { status },
+      { new: true }
+    );
+    
+    if (!assessment) {
+      throw ApiError.notFound('Assessment not found');
+    }
+    
+    return assessment;
   },
 };

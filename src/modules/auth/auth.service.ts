@@ -1,4 +1,5 @@
 import bcrypt from 'bcryptjs';
+import mongoose from 'mongoose';
 import { User, IUser } from './auth.model';
 import { ApiError } from '../../utils/ApiError';
 import { generateOTP, getOTPExpiry, hashOTP, verifyOTP, isOTPExpired } from '../../utils/otp';
@@ -6,8 +7,9 @@ import { generateTokenPair, TokenPair, generateAccessToken, generateRefreshToken
 import { sendOTPEmail, sendPasswordResetEmail } from '../../utils/sendEmail';
 import { verifyGoogleToken } from '../../utils/verifyGoogleToken';
 import { env } from '../../config/env';
-import { UserSubscription } from '../subscriptions/subscription.model';
+import { UserSubscription, SubscriptionStatus } from '../subscriptions/subscription.model';
 import { SessionProgress } from '../progress/sessionProgress.model';
+import { logger } from '../../config/logger';
 
 interface SignupData {
   firstName: string;
@@ -55,16 +57,34 @@ interface LoginResponse {
 
 export class AuthService {
   private async getExtraUserData(userId: mongoose.Types.ObjectId) {
-    // Get Subscription Plan
-    const subscription = await UserSubscription.findOne({ userId, status: 'active' }).populate('planId').lean();
-    const SubscriptionPlan = subscription && (subscription.planId as any)?.name ? (subscription.planId as any).name : 'Free';
+    // Check active subscription first
+    const activeSub = await UserSubscription.findOne({ userId, status: SubscriptionStatus.ACTIVE })
+      .populate('planId', 'name type')
+      .lean();
+
+    let SubscriptionPlan = 'No Plan';
+
+    if (activeSub && (activeSub.planId as any)?.name) {
+      // Active paid/community plan
+      SubscriptionPlan = (activeSub.planId as any).name;
+    } else {
+      // Check pending (applied, awaiting admin approval)
+      const pendingSub = await UserSubscription.findOne({ userId, status: SubscriptionStatus.PENDING })
+        .populate('planId', 'name type')
+        .lean();
+
+      if (pendingSub && (pendingSub.planId as any)?.name) {
+        SubscriptionPlan = `${(pendingSub.planId as any).name} (Pending Approval)`;
+      }
+      // else → 'No Plan' (user hasn't applied yet)
+    }
 
     // Get Session Stats
     const sessionStats = await SessionProgress.aggregate([
       { $match: { userId } },
-      { $group: { _id: null, totalCompleted: { $sum: "$completedSessions" } } }
+      { $group: { _id: null, totalCompleted: { $sum: '$completedSessions' } } },
     ]);
-    const youSession = sessionStats.length > 0 ? sessionStats[0].totalCompleted.toString() : "0";
+    const youSession = sessionStats.length > 0 ? sessionStats[0].totalCompleted.toString() : '0';
 
     return { SubscriptionPlan, youSession };
   }

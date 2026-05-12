@@ -1,0 +1,292 @@
+{
+	"info": {
+		"_postman_id": "admin-user-assessments-001",
+		"name": "Admin — User Assessment Results",
+		"description": "Admin can view a specific user's full assessment results — PHQ-9, GAD-7, DES-11 scores, severity, and recommendation.\n\nEndpoint: GET /api/admin/users/:userId/assessments",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "── SETUP ────────────────────────────",
+			"item": [
+				{
+					"name": "0. Admin Login",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"const r = pm.response.json();",
+									"if (pm.response.code === 200) {",
+									"    pm.collectionVariables.set('adminToken', r.data.session.accessToken);",
+									"    console.log('✅ Admin token saved');",
+									"    pm.test('Admin login OK', () => {",
+									"        pm.expect(r.success).to.be.true;",
+									"        pm.expect(r.data.user.role).to.equal('admin');",
+									"    });",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [{ "key": "Content-Type", "value": "application/json" }],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"email\": \"admin@myemdr.com\",\n  \"password\": \"Admin@123456\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/auth/login",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "auth", "login"]
+						},
+						"description": "Login as admin. Token auto-saved to adminToken variable."
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "── MAIN ─────────────────────────────",
+			"item": [
+				{
+					"name": "1. GET User Assessment Results",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"const r = pm.response.json();",
+									"pm.test('Assessment results returned', () => {",
+									"    pm.expect(pm.response.code).to.equal(200);",
+									"    pm.expect(r.success).to.be.true;",
+									"    pm.expect(r.data.assessments).to.be.an('array');",
+									"",
+									"    console.log('✅ Assessment results fetched');",
+									"    console.log('👤 User:', r.data.user.name, '|', r.data.user.email);",
+									"    console.log('📊 Total assessments:', r.data.totalAssessments);",
+									"",
+									"    if (r.data.assessments.length > 0) {",
+									"        const a = r.data.assessments[0];",
+									"        console.log('--- Latest Assessment ---');",
+									"        console.log('  Status:', a.status);",
+									"        console.log('  Completed:', a.isCompleted);",
+									"        console.log('  Submitted:', a.submittedAt);",
+									"        console.log('  PHQ-9 Score:', a.phq9.score, '| Severity:', a.phq9.severity);",
+									"        console.log('  GAD-7 Score:', a.gad7.score, '| Severity:', a.gad7.severity);",
+									"        console.log('  DES-11 Score:', a.des11.score);",
+									"        console.log('  Total Score:', a.totalScore);",
+									"        console.log('  Needs Professional Support:', a.requiresProfessionalSupport);",
+									"        console.log('  Recommendation:', a.recommendation);",
+									"    } else {",
+									"        console.log('ℹ️  No assessments found for this user');",
+									"    }",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [{ "key": "token", "value": "{{adminToken}}", "type": "string" }]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/admin/users/{{targetUserId}}/assessments",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "admin", "users", "{{targetUserId}}", "assessments"]
+						},
+						"description": "Get all assessment results for a specific user.\n\n⚠️ Set targetUserId variable to the user's _id before running.\n\nReturns: PHQ-9, GAD-7, DES-11 scores + severity + recommendation."
+					},
+					"response": []
+				},
+				{
+					"name": "2. GET — Known User (Ratulsikder)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"const r = pm.response.json();",
+									"pm.test('Assessment results for known user', () => {",
+									"    pm.expect(pm.response.code).to.equal(200);",
+									"    pm.expect(r.success).to.be.true;",
+									"    console.log('✅ Results for:', r.data.user.name);",
+									"    console.log('📊 Total:', r.data.totalAssessments);",
+									"    r.data.assessments.forEach((a, i) => {",
+									"        console.log(`Assessment #${i+1}:`);",
+									"        console.log('  PHQ-9:', a.phq9.score, '(' + a.phq9.severity + ')');",
+									"        console.log('  GAD-7:', a.gad7.score, '(' + a.gad7.severity + ')');",
+									"        console.log('  DES-11:', a.des11.score);",
+									"        console.log('  Total:', a.totalScore);",
+									"        console.log('  Recommendation:', a.recommendation);",
+									"    });",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [{ "key": "token", "value": "{{adminToken}}", "type": "string" }]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/admin/users/6a0015ddf54def8d787ef76f/assessments",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "admin", "users", "6a0015ddf54def8d787ef76f", "assessments"]
+						},
+						"description": "Pre-filled with Ratulsikder Ahmed's userId from the subscription request response."
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "── EDGE CASES ───────────────────────",
+			"item": [
+				{
+					"name": "❌ No Token (401)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Blocked without token', () => {",
+									"    pm.expect(pm.response.code).to.equal(401);",
+									"    console.log('✅ Correctly blocked — no token');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/admin/users/6a0015ddf54def8d787ef76f/assessments",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "admin", "users", "6a0015ddf54def8d787ef76f", "assessments"]
+						},
+						"description": "No Authorization header — should return 401."
+					},
+					"response": []
+				},
+				{
+					"name": "❌ Regular User Token (403)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Non-admin blocked', () => {",
+									"    pm.expect(pm.response.code).to.equal(403);",
+									"    console.log('✅ Correctly blocked — not admin');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [{ "key": "token", "value": "{{userToken}}", "type": "string" }]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/admin/users/6a0015ddf54def8d787ef76f/assessments",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "admin", "users", "6a0015ddf54def8d787ef76f", "assessments"]
+						},
+						"description": "⚠️ Set userToken by logging in as a regular user. Should return 403."
+					},
+					"response": []
+				},
+				{
+					"name": "❌ Invalid User ID (400)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Invalid ID rejected', () => {",
+									"    pm.expect(pm.response.code).to.equal(400);",
+									"    console.log('✅ Correctly rejected — invalid ObjectId');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [{ "key": "token", "value": "{{adminToken}}", "type": "string" }]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/admin/users/invalid-id-here/assessments",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "admin", "users", "invalid-id-here", "assessments"]
+						},
+						"description": "Invalid MongoDB ObjectId — should return 400 VALIDATION_ERROR."
+					},
+					"response": []
+				},
+				{
+					"name": "✅ User With No Assessments (Empty Array)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"const r = pm.response.json();",
+									"pm.test('No assessments returns empty array', () => {",
+									"    pm.expect(pm.response.code).to.equal(200);",
+									"    pm.expect(r.data.assessments).to.be.an('array');",
+									"    pm.expect(r.data.totalAssessments).to.equal(0);",
+									"    console.log('✅ Empty array returned gracefully');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [{ "key": "token", "value": "{{adminToken}}", "type": "string" }]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/admin/users/{{targetUserId}}/assessments",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "admin", "users", "{{targetUserId}}", "assessments"]
+						},
+						"description": "⚠️ Set targetUserId to a user who hasn't done any assessment. Should return empty array, not error."
+					},
+					"response": []
+				}
+			]
+		}
+	],
+	"variable": [
+		{ "key": "baseUrl",      "value": "http://localhost:5005", "type": "string" },
+		{ "key": "adminToken",   "value": "", "type": "string" },
+		{ "key": "userToken",    "value": "", "type": "string" },
+		{ "key": "targetUserId", "value": "6a0015ddf54def8d787ef76f", "type": "string" }
+	]
+}

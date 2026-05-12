@@ -28,19 +28,37 @@ export const notificationService = {
   async sendToUser(userId: string, payload: NotificationPayload) {
     const user = await User.findOne({ _id: userId, isDeleted: false }).select('fcmToken').lean();
     if (!user) throw ApiError.userNotFound();
-    if (!user.fcmToken) throw new ApiError(400, 'NO_FCM_TOKEN', 'User has no registered device');
+    if (!user.fcmToken) throw new ApiError(400, 'NO_FCM_TOKEN', 'User has no registered device token. Ask the user to log in from their device first.');
 
     let fcmResult;
     try {
       fcmResult = await sendToToken(user.fcmToken, payload);
     } catch (err: any) {
-      // FCM token invalid — clean it up automatically
-      if (err?.errorInfo?.code === 'messaging/registration-token-not-registered') {
+      const code: string = err?.errorInfo?.code ?? err?.code ?? '';
+
+      // Token no longer registered (app uninstalled / token rotated)
+      if (code === 'messaging/registration-token-not-registered') {
         await User.findByIdAndUpdate(userId, { $unset: { fcmToken: 1, fcmPlatform: 1 } });
         logger.warn('Stale FCM token removed', { userId });
-        throw new ApiError(400, 'NO_FCM_TOKEN', 'Device token expired. Please re-register.');
+        throw new ApiError(400, 'INVALID_FCM_TOKEN', 'Device token expired or unregistered. Token has been cleared — user must re-login from their device.');
       }
-      throw err;
+
+      // Token format is invalid (wrong string, test value, etc.)
+      if (code === 'messaging/invalid-argument' || code === 'messaging/invalid-registration-token') {
+        await User.findByIdAndUpdate(userId, { $unset: { fcmToken: 1, fcmPlatform: 1 } });
+        logger.warn('Invalid FCM token cleared', { userId, code });
+        throw new ApiError(400, 'INVALID_FCM_TOKEN', 'The stored device token is invalid. Token has been cleared — user must re-login from their device.');
+      }
+
+      // Firebase project misconfiguration
+      if (code === 'messaging/mismatched-credential' || code === 'messaging/sender-id-mismatch') {
+        logger.error('FCM credential mismatch — check Firebase project config', { code });
+        throw new ApiError(500, 'FCM_CONFIG_ERROR', 'Firebase credential mismatch. Check server FCM configuration.');
+      }
+
+      // Any other FCM error — log and surface cleanly
+      logger.error('FCM send failed', { userId, code, message: err?.message });
+      throw new ApiError(502, 'FCM_SEND_FAILED', `Push notification failed: ${err?.message ?? 'Unknown FCM error'}`);
     }
 
     const notification = await Notification.create({ userId, ...payload });

@@ -30,3 +30,12 @@ export const des11Schema = z.object({
     des11Answers: z.array(score0to100).length(8),
   }),
 });
+
+export const statusUpdateSchema = z.object({
+  body: z.object({
+    assessmentId: z.string().min(1, 'Assessment ID is required'),
+    status: z.enum(['pending', 'approved', 'cancelled'], {
+      errorMap: () => ({ message: 'Status must be pending, approved, or cancelled' })
+    }),
+  }),
+});

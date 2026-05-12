@@ -57,6 +57,8 @@ export const subscriptionService = {
 
   /**
    * Apply for Community Access (Free)
+   * Creates a SubscriptionRequest (for admin review) AND
+   * a UserSubscription with status=pending (blocks access until approved)
    */
   async applyForAccess(userId: string, planId: string) {
     const plan = await SubscriptionPlan.findById(planId);
@@ -70,14 +72,37 @@ export const subscriptionService = {
       throw ApiError.validationError('You already have a pending application for this plan');
     }
 
+    // Check if already active on this plan
+    const alreadyActive = await UserSubscription.findOne({ userId, planId, status: SubscriptionStatus.ACTIVE });
+    if (alreadyActive) {
+      throw ApiError.validationError('You already have an active subscription to this plan');
+    }
+
+    // Create the review request
     const request = await SubscriptionRequest.create({
       userId,
       planId,
       status: 'pending',
     });
 
-    logger.info('Community Access request submitted', { userId, planId, requestId: request._id });
-    return request;
+    // Create a PENDING subscription — blocks feature access until admin approves
+    await UserSubscription.findOneAndUpdate(
+      { userId, planId },
+      {
+        userId,
+        planId,
+        status: SubscriptionStatus.PENDING,
+        startDate: new Date(),
+      },
+      { upsert: true, new: true }
+    );
+
+    logger.info('Community Access request submitted — subscription pending approval', { userId, planId, requestId: request._id });
+    return {
+      requestId: request._id,
+      status: 'pending',
+      message: 'Your application has been submitted. Access will be granted once an admin approves your request.',
+    };
   },
 
   // ── ADMIN METHODS ────────────────────────────────────────
@@ -123,22 +148,64 @@ export const subscriptionService = {
     await request.save();
 
     if (status === 'approved') {
-      // Subscribing the user to the plan automatically
+      // Cancel any other active subscriptions
       await UserSubscription.updateMany(
         { userId: request.userId, status: SubscriptionStatus.ACTIVE },
         { status: SubscriptionStatus.CANCELED }
       );
 
-      await UserSubscription.create({
+      // 1 month expiry from approval date
+      const startDate = new Date();
+      const endDate   = new Date(startDate);
+      endDate.setMonth(endDate.getMonth() + 1);
+
+      // Activate the pending subscription for this plan
+      const updated = await UserSubscription.findOneAndUpdate(
+        { userId: request.userId, planId: request.planId },
+        {
+          status:    SubscriptionStatus.ACTIVE,
+          startDate,
+          endDate,
+          autoRenew: false,
+        },
+        { new: true }
+      );
+
+      // If no pending subscription exists (edge case), create one
+      if (!updated) {
+        await UserSubscription.create({
+          userId:    request.userId,
+          planId:    request.planId,
+          status:    SubscriptionStatus.ACTIVE,
+          startDate,
+          endDate,
+          autoRenew: false,
+        });
+      }
+
+      logger.info('Community Access approved — 1 month subscription activated', {
+        userId: request.userId,
+        startDate,
+        endDate,
+      });
+    } else {
+      // Rejected — remove the pending subscription so user can re-apply later
+      await UserSubscription.findOneAndDelete({
         userId: request.userId,
         planId: request.planId,
-        status: SubscriptionStatus.ACTIVE,
-        startDate: new Date(),
+        status: SubscriptionStatus.PENDING,
       });
 
-      logger.info('Community Access request approved and user subscribed', { userId: request.userId });
+      logger.info('Community Access rejected — pending subscription removed', { userId: request.userId });
     }
 
-    return request;
+    return {
+      requestId: request._id,
+      status: request.status,
+      adminComment: request.adminComment,
+      message: status === 'approved'
+        ? 'Application approved. User now has full access.'
+        : 'Application rejected. User has been notified.',
+    };
   },
 };

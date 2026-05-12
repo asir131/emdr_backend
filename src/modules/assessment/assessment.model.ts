@@ -4,6 +4,8 @@ export type SeverityLevel = 'minimal' | 'mild' | 'moderate' | 'moderately_severe
 
 export interface IAssessment extends Document {
   userId: mongoose.Types.ObjectId;
+  email: string;
+  status: 'pending' | 'approved' | 'cancelled';
 
   // PHQ-9
   phq9Answers: number[];
@@ -33,6 +35,8 @@ export interface IAssessment extends Document {
 const assessmentSchema = new Schema<IAssessment>(
   {
     userId: { type: Schema.Types.ObjectId, ref: 'User', required: true, index: true },
+    email: { type: String, required: true },
+    status: { type: String, enum: ['pending', 'approved', 'cancelled'], default: 'pending' },
 
     phq9Answers:   { type: [Number], default: [] },
     phq9Score:     { type: Number },

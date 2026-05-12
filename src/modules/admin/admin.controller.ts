@@ -74,4 +74,25 @@ export const adminController = {
       respond(res, await adminService.updateUserStatus(userId, status));
     } catch (e) { next(e); }
   },
+
+  // GET /admin/users/free?page=1&limit=10&search=john
+  getFreeUsers: async (req: AuthRequest, res: Response, next: NextFunction) => {
+    try {
+      const { page, limit, search } = req.query;
+      const data = await adminService.getFreeUsers(
+        Number(page) || 1,
+        Number(limit) || 10,
+        (search as string) || ''
+      );
+      respond(res, data);
+    } catch (e) { next(e); }
+  },
+
+  // GET /admin/users/:userId/assessments
+  getUserAssessments: async (req: AuthRequest, res: Response, next: NextFunction) => {
+    try {
+      const { userId } = req.params;
+      respond(res, await adminService.getUserAssessments(userId));
+    } catch (e) { next(e); }
+  },
 };

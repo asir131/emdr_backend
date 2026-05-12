@@ -1,0 +1,451 @@
+{
+	"info": {
+		"_postman_id": "admin-free-users-001",
+		"name": "Admin — Free Users List",
+		"description": "Get all free (non-paid) users. Free users = no active Standard/Premium subscription. Includes users with no plan, Community plan, or expired/canceled subscriptions.",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "── SETUP ────────────────────────────",
+			"item": [
+				{
+					"name": "0. Admin Login",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"const r = pm.response.json();",
+									"if (pm.response.code === 200) {",
+									"    pm.collectionVariables.set('adminToken', r.data.session.accessToken);",
+									"    console.log('✅ Admin token saved');",
+									"    console.log('Role:', r.data.user.role);",
+									"    pm.test('Admin login OK', () => {",
+									"        pm.expect(r.success).to.be.true;",
+									"        pm.expect(r.data.user.role).to.equal('admin');",
+									"    });",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [{ "key": "Content-Type", "value": "application/json" }],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"email\": \"admin@myemdr.com\",\n  \"password\": \"Admin@123456\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/auth/login",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "auth", "login"]
+						},
+						"description": "Login as admin to get the access token. Token is auto-saved to `adminToken` variable."
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "── MAIN FLOW ────────────────────────",
+			"item": [
+				{
+					"name": "1. GET All Free Users (Default)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"const r = pm.response.json();",
+									"pm.test('Free users list returned', () => {",
+									"    pm.expect(pm.response.code).to.equal(200);",
+									"    pm.expect(r.success).to.be.true;",
+									"    pm.expect(r.data.users).to.be.an('array');",
+									"    pm.expect(r.data.pagination).to.exist;",
+									"    pm.expect(r.data.pagination.total).to.be.a('number');",
+									"    console.log('✅ Free users fetched');",
+									"    console.log('📊 Total free users:', r.data.pagination.total);",
+									"    console.log('📄 Page:', r.data.pagination.page, '/', r.data.pagination.totalPages);",
+									"    console.log('👥 Users on this page:', r.data.users.length);",
+									"    if (r.data.users.length > 0) {",
+									"        const u = r.data.users[0];",
+									"        console.log('--- First User ---');",
+									"        console.log('  Name:', u.name);",
+									"        console.log('  Email:', u.email);",
+									"        console.log('  Status:', u.status);",
+									"        console.log('  Plan:', u.subscription.name, '|', u.subscription.type);",
+									"        console.log('  Sub Status:', u.subscription.status);",
+									"        pm.collectionVariables.set('sampleUserId', u.id);",
+									"    }",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [{ "key": "token", "value": "{{adminToken}}", "type": "string" }]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/admin/users/free",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "admin", "users", "free"]
+						},
+						"description": "Returns page 1 with 10 users by default. All users without an active Standard or Premium subscription."
+					},
+					"response": []
+				},
+				{
+					"name": "2. GET Free Users — Page 2 (Pagination)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"const r = pm.response.json();",
+									"pm.test('Pagination works', () => {",
+									"    pm.expect(pm.response.code).to.equal(200);",
+									"    pm.expect(r.data.pagination.page).to.equal(2);",
+									"    console.log('✅ Page 2 returned');",
+									"    console.log('📄 Page:', r.data.pagination.page, '/', r.data.pagination.totalPages);",
+									"    console.log('👥 Users on this page:', r.data.users.length);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [{ "key": "token", "value": "{{adminToken}}", "type": "string" }]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/admin/users/free?page=2&limit=10",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "admin", "users", "free"],
+							"query": [
+								{ "key": "page",  "value": "2" },
+								{ "key": "limit", "value": "10" }
+							]
+						},
+						"description": "Get page 2 with 10 users per page."
+					},
+					"response": []
+				},
+				{
+					"name": "3. GET Free Users — Custom Limit (20 per page)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"const r = pm.response.json();",
+									"pm.test('Custom limit works', () => {",
+									"    pm.expect(pm.response.code).to.equal(200);",
+									"    pm.expect(r.data.users.length).to.be.at.most(20);",
+									"    console.log('✅ Custom limit (20) applied');",
+									"    console.log('👥 Users returned:', r.data.users.length);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [{ "key": "token", "value": "{{adminToken}}", "type": "string" }]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/admin/users/free?page=1&limit=20",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "admin", "users", "free"],
+							"query": [
+								{ "key": "page",  "value": "1" },
+								{ "key": "limit", "value": "20" }
+							]
+						},
+						"description": "Get up to 20 free users per page."
+					},
+					"response": []
+				},
+				{
+					"name": "4. GET Free Users — Search by Name",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"const r = pm.response.json();",
+									"pm.test('Search by name works', () => {",
+									"    pm.expect(pm.response.code).to.equal(200);",
+									"    pm.expect(r.success).to.be.true;",
+									"    console.log('✅ Search by name returned', r.data.users.length, 'result(s)');",
+									"    r.data.users.forEach(u => console.log(' -', u.name, '|', u.email));",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [{ "key": "token", "value": "{{adminToken}}", "type": "string" }]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/admin/users/free?search=john",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "admin", "users", "free"],
+							"query": [
+								{ "key": "search", "value": "john" }
+							]
+						},
+						"description": "Search free users by first name, last name, or email. Case-insensitive."
+					},
+					"response": []
+				},
+				{
+					"name": "5. GET Free Users — Search by Email",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"const r = pm.response.json();",
+									"pm.test('Search by email works', () => {",
+									"    pm.expect(pm.response.code).to.equal(200);",
+									"    console.log('✅ Search by email returned', r.data.users.length, 'result(s)');",
+									"    r.data.users.forEach(u => console.log(' -', u.name, '|', u.email, '|', u.subscription.type));",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [{ "key": "token", "value": "{{adminToken}}", "type": "string" }]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/admin/users/free?search=gmail.com",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "admin", "users", "free"],
+							"query": [
+								{ "key": "search", "value": "gmail.com" }
+							]
+						},
+						"description": "Search free users by email domain or partial email."
+					},
+					"response": []
+				},
+				{
+					"name": "6. GET Free Users — Search + Pagination Combined",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"const r = pm.response.json();",
+									"pm.test('Search + pagination combined works', () => {",
+									"    pm.expect(pm.response.code).to.equal(200);",
+									"    pm.expect(r.data.pagination.page).to.equal(1);",
+									"    console.log('✅ Search + pagination OK');",
+									"    console.log('🔍 Search results total:', r.data.pagination.total);",
+									"    console.log('👥 On this page:', r.data.users.length);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [{ "key": "token", "value": "{{adminToken}}", "type": "string" }]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/admin/users/free?page=1&limit=5&search=a",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "admin", "users", "free"],
+							"query": [
+								{ "key": "page",   "value": "1" },
+								{ "key": "limit",  "value": "5" },
+								{ "key": "search", "value": "a" }
+							]
+						},
+						"description": "Combine search with pagination — 5 results per page, search for names/emails containing 'a'."
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "── EDGE CASES ───────────────────────",
+			"item": [
+				{
+					"name": "❌ No Token (401)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Blocked without token', () => {",
+									"    pm.expect(pm.response.code).to.equal(401);",
+									"    console.log('✅ Correctly blocked — no token');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/admin/users/free",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "admin", "users", "free"]
+						},
+						"description": "No Authorization header — should return 401."
+					},
+					"response": []
+				},
+				{
+					"name": "❌ Regular User Token (403)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Non-admin blocked', () => {",
+									"    pm.expect(pm.response.code).to.equal(403);",
+									"    console.log('✅ Correctly blocked — not admin');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [{ "key": "token", "value": "{{userToken}}", "type": "string" }]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/admin/users/free",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "admin", "users", "free"]
+						},
+						"description": "⚠️ Set userToken by logging in as a regular user first. Should return 403."
+					},
+					"response": []
+				},
+				{
+					"name": "✅ Search — No Results (Empty Array)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"const r = pm.response.json();",
+									"pm.test('Empty search returns empty array (not error)', () => {",
+									"    pm.expect(pm.response.code).to.equal(200);",
+									"    pm.expect(r.success).to.be.true;",
+									"    pm.expect(r.data.users).to.be.an('array');",
+									"    pm.expect(r.data.pagination.total).to.equal(0);",
+									"    console.log('✅ No results — returns empty array gracefully');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [{ "key": "token", "value": "{{adminToken}}", "type": "string" }]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/admin/users/free?search=zzzzzzzzzzzzzzzzzzz",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "admin", "users", "free"],
+							"query": [
+								{ "key": "search", "value": "zzzzzzzzzzzzzzzzzzz" }
+							]
+						},
+						"description": "Search with a string that matches no user — should return empty array with total: 0, not an error."
+					},
+					"response": []
+				},
+				{
+					"name": "✅ Page Beyond Range (Empty Array)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"const r = pm.response.json();",
+									"pm.test('Out-of-range page returns empty array', () => {",
+									"    pm.expect(pm.response.code).to.equal(200);",
+									"    pm.expect(r.data.users).to.be.an('array');",
+									"    pm.expect(r.data.users.length).to.equal(0);",
+									"    console.log('✅ Page 9999 returns empty array gracefully');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [{ "key": "token", "value": "{{adminToken}}", "type": "string" }]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/admin/users/free?page=9999",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "admin", "users", "free"],
+							"query": [
+								{ "key": "page", "value": "9999" }
+							]
+						},
+						"description": "Request a page far beyond the total — should return empty users array, not an error."
+					},
+					"response": []
+				}
+			]
+		}
+	],
+	"variable": [
+		{ "key": "baseUrl",      "value": "http://localhost:5005", "type": "string" },
+		{ "key": "adminToken",   "value": "", "type": "string" },
+		{ "key": "userToken",    "value": "", "type": "string" },
+		{ "key": "sampleUserId", "value": "", "type": "string" }
+	]
+}

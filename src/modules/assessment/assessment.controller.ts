@@ -41,7 +41,20 @@ export const assessmentController = {
 
   getResult: async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
-      respond(res, await assessmentService.getLatestResult(req.user!.userId));
+      // User can see their own result, Admin can see any user's result
+      const userId = req.user!.role === 'admin' && req.query.userId 
+        ? req.query.userId as string 
+        : req.user!.userId;
+      
+      respond(res, await assessmentService.getLatestResult(userId));
+    } catch (e) { next(e); }
+  },
+
+  updateStatus: async (req: AuthRequest, res: Response, next: NextFunction) => {
+    try {
+      const { assessmentId, status } = req.body;
+      const result = await assessmentService.updateStatus(assessmentId, status);
+      respond(res, result);
     } catch (e) { next(e); }
   },
 };

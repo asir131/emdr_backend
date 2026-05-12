@@ -1,0 +1,679 @@
+{
+	"info": {
+		"_postman_id": "community-access-flow-001",
+		"name": "Community Access — Full Approval Flow",
+		"description": "Complete flow: User applies for free community plan → status pending → Admin reviews → Approve/Reject → User gets access.\n\nFlow:\n1. Get available plans\n2. User applies for community plan\n3. User tries to access protected feature (blocked)\n4. Admin sees pending requests\n5. Admin approves/rejects\n6. User now has access",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "── SETUP ────────────────────────────",
+			"item": [
+				{
+					"name": "0a. Admin Login",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"const r = pm.response.json();",
+									"if (pm.response.code === 200) {",
+									"    pm.collectionVariables.set('adminToken', r.data.session.accessToken);",
+									"    console.log('✅ Admin token saved');",
+									"    pm.test('Admin login OK', () => {",
+									"        pm.expect(r.success).to.be.true;",
+									"        pm.expect(r.data.user.role).to.equal('admin');",
+									"    });",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [{ "key": "Content-Type", "value": "application/json" }],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"email\": \"admin@myemdr.com\",\n  \"password\": \"Admin@123456\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/auth/login",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "auth", "login"]
+						},
+						"description": "Login as admin. Token auto-saved to adminToken variable."
+					},
+					"response": []
+				},
+				{
+					"name": "0b. User Login",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"const r = pm.response.json();",
+									"if (pm.response.code === 200) {",
+									"    pm.collectionVariables.set('userToken', r.data.session.accessToken);",
+									"    pm.collectionVariables.set('userId', r.data.user.id);",
+									"    console.log('✅ User token saved');",
+									"    console.log('👤 User ID:', r.data.user.id);",
+									"    pm.test('User login OK', () => {",
+									"        pm.expect(r.success).to.be.true;",
+									"        pm.expect(r.data.user.role).to.equal('user');",
+									"    });",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [{ "key": "Content-Type", "value": "application/json" }],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"email\": \"testuser@example.com\",\n  \"password\": \"User@123456\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/auth/login",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "auth", "login"]
+						},
+						"description": "⚠️ Change email/password to a real user. Token auto-saved to userToken variable."
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "── STEP 1: Get Plans ────────────────",
+			"item": [
+				{
+					"name": "1. GET All Plans (Find Community Plan ID)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"const r = pm.response.json();",
+									"pm.test('Plans returned', () => {",
+									"    pm.expect(pm.response.code).to.equal(200);",
+									"    pm.expect(r.data).to.be.an('array');",
+									"    console.log('✅ Available plans:');",
+									"    r.data.forEach(p => {",
+									"        console.log(` - [${p._id}] ${p.name} | type: ${p.type} | price: ${p.currency}${p.price} | community: ${p.isCommunityAccess}`);",
+									"        if (p.isCommunityAccess) {",
+									"            pm.collectionVariables.set('communityPlanId', p._id);",
+									"            console.log('🎯 Community plan ID saved:', p._id);",
+									"        }",
+									"    });",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/subscriptions/plans",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "subscriptions", "plans"]
+						},
+						"description": "Public endpoint. Find the community plan — isCommunityAccess: true. Plan ID auto-saved to communityPlanId variable."
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "── STEP 2: User Applies ─────────────",
+			"item": [
+				{
+					"name": "2. POST Apply for Community Access",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"const r = pm.response.json();",
+									"pm.test('Application submitted', () => {",
+									"    pm.expect(pm.response.code).to.equal(201);",
+									"    pm.expect(r.success).to.be.true;",
+									"    pm.expect(r.data.status).to.equal('pending');",
+									"    pm.collectionVariables.set('requestId', r.data.requestId);",
+									"    console.log('✅ Application submitted');",
+									"    console.log('📋 Request ID:', r.data.requestId);",
+									"    console.log('⏳ Status:', r.data.status);",
+									"    console.log('💬 Message:', r.data.message);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [{ "key": "token", "value": "{{userToken}}", "type": "string" }]
+						},
+						"method": "POST",
+						"header": [{ "key": "Content-Type", "value": "application/json" }],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"planId\": \"{{communityPlanId}}\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/subscriptions/apply",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "subscriptions", "apply"]
+						},
+						"description": "User applies for community (free) plan. Creates UserSubscription with status=pending and SubscriptionRequest for admin review."
+					},
+					"response": []
+				},
+				{
+					"name": "3. GET My Subscription (Shows Pending)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"const r = pm.response.json();",
+									"pm.test('Subscription status checked', () => {",
+									"    pm.expect(pm.response.code).to.equal(200);",
+									"    console.log('📋 My subscription:', JSON.stringify(r.data, null, 2));",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [{ "key": "token", "value": "{{userToken}}", "type": "string" }]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/subscriptions/my",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "subscriptions", "my"]
+						},
+						"description": "Check user's current subscription status after applying."
+					},
+					"response": []
+				},
+				{
+					"name": "4. ⛔ Try Protected Feature (Should be Blocked)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"const r = pm.response.json();",
+									"pm.test('Access blocked with pending message', () => {",
+									"    pm.expect(pm.response.code).to.equal(403);",
+									"    pm.expect(r.error.code).to.equal('SUBSCRIPTION_PENDING');",
+									"    console.log('✅ Correctly blocked — application under review');",
+									"    console.log('💬 Message:', r.error.message);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [{ "key": "token", "value": "{{userToken}}", "type": "string" }]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/assessment/result",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "assessment", "result"]
+						},
+						"description": "Try to access a protected feature. Should return 403 SUBSCRIPTION_PENDING — 'Your application is under review...'"
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "── STEP 3: Admin Reviews ────────────",
+			"item": [
+				{
+					"name": "5. GET All Pending Requests (Admin)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"const r = pm.response.json();",
+									"pm.test('Pending requests returned', () => {",
+									"    pm.expect(pm.response.code).to.equal(200);",
+									"    pm.expect(r.data).to.be.an('array');",
+									"    console.log('✅ Pending requests:', r.data.length);",
+									"    r.data.forEach(req => {",
+									"        console.log(` - [${req._id}] User: ${req.userId?.firstName} ${req.userId?.lastName} (${req.userId?.email})`);",
+									"        console.log(`   Plan: ${req.planId?.name} | Status: ${req.status}`);",
+									"        if (req.status === 'pending') {",
+									"            pm.collectionVariables.set('requestId', req._id);",
+									"            console.log('🎯 Request ID saved:', req._id);",
+									"        }",
+									"    });",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [{ "key": "token", "value": "{{adminToken}}", "type": "string" }]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/subscriptions/admin/requests",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "subscriptions", "admin", "requests"]
+						},
+						"description": "Admin sees all community access requests. Pending request ID auto-saved to requestId variable."
+					},
+					"response": []
+				},
+				{
+					"name": "6. GET Free Users List (Admin) — Shows Pending",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"const r = pm.response.json();",
+									"pm.test('Free users list with pending status', () => {",
+									"    pm.expect(pm.response.code).to.equal(200);",
+									"    console.log('✅ Free users:', r.data.pagination.total);",
+									"    r.data.users.forEach(u => {",
+									"        console.log(` - ${u.name} | ${u.subscription.status} | ${u.subscription.approvalStatus}`);",
+									"    });",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [{ "key": "token", "value": "{{adminToken}}", "type": "string" }]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/admin/users/free",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "admin", "users", "free"]
+						},
+						"description": "Admin sees free users. Pending users show approvalStatus: 'awaiting_admin_approval'."
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "── STEP 4a: APPROVE ─────────────────",
+			"item": [
+				{
+					"name": "7a. ✅ APPROVE Request (Admin)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"const r = pm.response.json();",
+									"pm.test('Request approved', () => {",
+									"    pm.expect(pm.response.code).to.equal(200);",
+									"    pm.expect(r.success).to.be.true;",
+									"    pm.expect(r.data.status).to.equal('approved');",
+									"    console.log('✅ Application APPROVED');",
+									"    console.log('💬 Message:', r.data.message);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [{ "key": "token", "value": "{{adminToken}}", "type": "string" }]
+						},
+						"method": "PATCH",
+						"header": [{ "key": "Content-Type", "value": "application/json" }],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"status\": \"approved\",\n  \"comment\": \"Welcome to the community! Your application has been reviewed and approved.\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/subscriptions/admin/requests/{{requestId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "subscriptions", "admin", "requests", "{{requestId}}"]
+						},
+						"description": "Admin approves the request. UserSubscription status changes from pending → active."
+					},
+					"response": []
+				},
+				{
+					"name": "8a. ✅ User Accesses Protected Feature (Now Allowed)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"const r = pm.response.json();",
+									"pm.test('Access granted after approval', () => {",
+									"    pm.expect(pm.response.code).to.not.equal(403);",
+									"    console.log('✅ User now has access!');",
+									"    console.log('Response code:', pm.response.code);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [{ "key": "token", "value": "{{userToken}}", "type": "string" }]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/assessment/result",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "assessment", "result"]
+						},
+						"description": "After approval, user can access protected features. Should NOT return 403."
+					},
+					"response": []
+				},
+				{
+					"name": "8b. GET My Subscription (Now Active)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"const r = pm.response.json();",
+									"pm.test('Subscription now active', () => {",
+									"    pm.expect(pm.response.code).to.equal(200);",
+									"    if (r.data) {",
+									"        console.log('✅ Subscription status:', r.data.status);",
+									"        console.log('📋 Plan:', r.data.planId?.name);",
+									"    }",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [{ "key": "token", "value": "{{userToken}}", "type": "string" }]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/subscriptions/my",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "subscriptions", "my"]
+						},
+						"description": "Verify subscription is now active after admin approval."
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "── STEP 4b: REJECT (Alternative) ───",
+			"item": [
+				{
+					"name": "7b. ❌ REJECT Request (Admin)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"const r = pm.response.json();",
+									"pm.test('Request rejected', () => {",
+									"    pm.expect(pm.response.code).to.equal(200);",
+									"    pm.expect(r.data.status).to.equal('rejected');",
+									"    console.log('❌ Application REJECTED');",
+									"    console.log('💬 Message:', r.data.message);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [{ "key": "token", "value": "{{adminToken}}", "type": "string" }]
+						},
+						"method": "PATCH",
+						"header": [{ "key": "Content-Type", "value": "application/json" }],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"status\": \"rejected\",\n  \"comment\": \"Unfortunately your application does not meet our current criteria. Please try again later.\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/subscriptions/admin/requests/{{requestId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "subscriptions", "admin", "requests", "{{requestId}}"]
+						},
+						"description": "⚠️ Use this INSTEAD of 7a to test rejection flow. Pending subscription is removed — user can re-apply."
+					},
+					"response": []
+				},
+				{
+					"name": "8c. ⛔ User Still Blocked After Rejection",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"const r = pm.response.json();",
+									"pm.test('User blocked after rejection', () => {",
+									"    pm.expect(pm.response.code).to.equal(403);",
+									"    console.log('✅ Correctly blocked after rejection');",
+									"    console.log('Code:', r.error.code);",
+									"    console.log('Message:', r.error.message);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [{ "key": "token", "value": "{{userToken}}", "type": "string" }]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/assessment/result",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "assessment", "result"]
+						},
+						"description": "After rejection, user is still blocked. They can re-apply."
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "── EDGE CASES ───────────────────────",
+			"item": [
+				{
+					"name": "❌ Apply Twice (Duplicate Error)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"const r = pm.response.json();",
+									"pm.test('Duplicate application rejected', () => {",
+									"    pm.expect(pm.response.code).to.equal(400);",
+									"    console.log('✅ Correctly rejected duplicate application');",
+									"    console.log('Message:', r.error.message);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [{ "key": "token", "value": "{{userToken}}", "type": "string" }]
+						},
+						"method": "POST",
+						"header": [{ "key": "Content-Type", "value": "application/json" }],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"planId\": \"{{communityPlanId}}\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/subscriptions/apply",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "subscriptions", "apply"]
+						},
+						"description": "Apply again while already pending — should return 400 'already have a pending application'."
+					},
+					"response": []
+				},
+				{
+					"name": "❌ Apply for Non-Community Plan",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"const r = pm.response.json();",
+									"pm.test('Non-community plan rejected', () => {",
+									"    pm.expect(pm.response.code).to.equal(400);",
+									"    console.log('✅ Correctly rejected — not a community plan');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [{ "key": "token", "value": "{{userToken}}", "type": "string" }]
+						},
+						"method": "POST",
+						"header": [{ "key": "Content-Type", "value": "application/json" }],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"planId\": \"000000000000000000000000\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/subscriptions/apply",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "subscriptions", "apply"]
+						},
+						"description": "Try to apply with a non-community plan ID — should return 400."
+					},
+					"response": []
+				},
+				{
+					"name": "❌ Approve Already Processed Request",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"const r = pm.response.json();",
+									"pm.test('Already processed request rejected', () => {",
+									"    pm.expect(pm.response.code).to.equal(400);",
+									"    console.log('✅ Correctly rejected — request already processed');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [{ "key": "token", "value": "{{adminToken}}", "type": "string" }]
+						},
+						"method": "PATCH",
+						"header": [{ "key": "Content-Type", "value": "application/json" }],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"status\": \"approved\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/subscriptions/admin/requests/{{requestId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "subscriptions", "admin", "requests", "{{requestId}}"]
+						},
+						"description": "Try to approve an already approved/rejected request — should return 400 'Request already processed'."
+					},
+					"response": []
+				},
+				{
+					"name": "❌ No Token on Protected Feature (401)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('No token blocked', () => {",
+									"    pm.expect(pm.response.code).to.equal(401);",
+									"    console.log('✅ Correctly blocked — no token');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/assessment/result",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "assessment", "result"]
+						},
+						"description": "No auth token — should return 401."
+					},
+					"response": []
+				}
+			]
+		}
+	],
+	"variable": [
+		{ "key": "baseUrl",         "value": "http://localhost:5005", "type": "string" },
+		{ "key": "adminToken",      "value": "", "type": "string" },
+		{ "key": "userToken",       "value": "", "type": "string" },
+		{ "key": "userId",          "value": "", "type": "string" },
+		{ "key": "communityPlanId", "value": "", "type": "string" },
+		{ "key": "requestId",       "value": "", "type": "string" }
+	]
+}

@@ -1,8 +1,9 @@
 import { Router } from 'express';
 import { assessmentController as ctrl } from './assessment.controller';
-import { authenticate } from '../../middleware/authMiddleware';
+import { authenticate, requireAdmin } from '../../middleware/authMiddleware';
+import { requireSubscription } from '../../middleware/requireSubscription';
 import { validate } from '../../middleware/validate';
-import { phq9Schema, gad7Schema, des11Schema, assessmentSchema } from './assessment.validation';
+import { phq9Schema, gad7Schema, des11Schema, assessmentSchema, statusUpdateSchema } from './assessment.validation';
 
 const router = Router();
 
@@ -16,6 +17,10 @@ router.post('/des11', validate(des11Schema), ctrl.submitDes11);
 // Standard Full Assessment Submission
 router.post('/submit', validate(assessmentSchema), ctrl.submitFull);
 
-router.get('/result', ctrl.getResult);
+// Get result - requires active subscription (free or paid)
+router.get('/result', requireSubscription, ctrl.getResult);
+
+// Admin only - Update assessment status
+router.patch('/status', requireAdmin, validate(statusUpdateSchema), ctrl.updateStatus);
 
 export default router;

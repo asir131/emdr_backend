@@ -1,0 +1,542 @@
+{
+	"info": {
+		"_postman_id": "free-plan-apply-flow-001",
+		"name": "Free Plan Apply Flow",
+		"description": "Signup → No Plan → Apply for Free Plan → Pending Approval → Admin Approves → Community Access ✅",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "── STEP 1: Signup ───────────────────",
+			"item": [
+				{
+					"name": "1. POST Signup",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"const r = pm.response.json();",
+									"if (pm.response.code === 201 || pm.response.code === 200) {",
+									"    pm.collectionVariables.set('userToken', r.data.session.accessToken);",
+									"    pm.collectionVariables.set('userEmail', r.data.email);",
+									"    if (r.data._dev_otp) {",
+									"        pm.collectionVariables.set('devOtp', r.data._dev_otp);",
+									"        console.log('🔑 DEV OTP:', r.data._dev_otp);",
+									"    }",
+									"    console.log('✅ Signup successful');",
+									"    console.log('📧 Email:', r.data.email);",
+									"    pm.test('Signup OK', () => pm.expect(r.success).to.be.true);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [{ "key": "Content-Type", "value": "application/json" }],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"firstName\": \"Test\",\n  \"lastName\": \"User\",\n  \"email\": \"testfreeplan@example.com\",\n  \"password\": \"Test@123456\",\n  \"isAcceptPrivacyStatement\": true\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/auth/signup",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "auth", "signup"]
+						},
+						"description": "New user signup. DEV OTP auto-saved. SubscriptionPlan will be 'No Plan'."
+					},
+					"response": []
+				},
+				{
+					"name": "2. POST Verify OTP",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"const r = pm.response.json();",
+									"if (pm.response.code === 200) {",
+									"    pm.collectionVariables.set('userToken', r.data.session?.accessToken || pm.collectionVariables.get('userToken'));",
+									"    console.log('✅ OTP verified');",
+									"    console.log('📋 SubscriptionPlan:', r.data.user?.SubscriptionPlan);",
+									"    pm.test('OTP verified — SubscriptionPlan is No Plan', () => {",
+									"        pm.expect(r.success).to.be.true;",
+									"        pm.expect(r.data.user.SubscriptionPlan).to.equal('No Plan');",
+									"    });",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [{ "key": "Content-Type", "value": "application/json" }],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"email\": \"testfreeplan@example.com\",\n  \"otp\": \"{{devOtp}}\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/auth/verify-otp",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "auth", "verify-otp"]
+						},
+						"description": "Verify OTP. After this, SubscriptionPlan = 'No Plan'."
+					},
+					"response": []
+				},
+				{
+					"name": "3. POST Login (Confirm No Plan)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"const r = pm.response.json();",
+									"if (pm.response.code === 200) {",
+									"    pm.collectionVariables.set('userToken', r.data.session.accessToken);",
+									"    pm.collectionVariables.set('userId', r.data.user.id);",
+									"    console.log('✅ Login successful');",
+									"    console.log('📋 SubscriptionPlan:', r.data.user.SubscriptionPlan);",
+									"    console.log('👤 User ID:', r.data.user.id);",
+									"    pm.test('Login OK — SubscriptionPlan is No Plan', () => {",
+									"        pm.expect(r.success).to.be.true;",
+									"        pm.expect(r.data.user.SubscriptionPlan).to.equal('No Plan');",
+									"    });",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [{ "key": "Content-Type", "value": "application/json" }],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"email\": \"testfreeplan@example.com\",\n  \"password\": \"Test@123456\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/auth/login",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "auth", "login"]
+						},
+						"description": "Login confirms SubscriptionPlan = 'No Plan'. userId auto-saved."
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "── STEP 2: Get Plans ────────────────",
+			"item": [
+				{
+					"name": "4. GET All Plans (Find Free Plan ID)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"const r = pm.response.json();",
+									"pm.test('Plans returned', () => {",
+									"    pm.expect(pm.response.code).to.equal(200);",
+									"    console.log('✅ Available plans:');",
+									"    r.data.forEach(p => {",
+									"        console.log(` - [${p._id}] ${p.name} | type: ${p.type} | price: ${p.currency || ''}${p.price} | community: ${p.isCommunityAccess}`);",
+									"        if (p.isCommunityAccess || p.type === 'community' || p.type === 'free') {",
+									"            pm.collectionVariables.set('freePlanId', p._id);",
+									"            console.log('🎯 Free/Community plan ID saved:', p._id, '→', p.name);",
+									"        }",
+									"    });",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/subscriptions/plans",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "subscriptions", "plans"]
+						},
+						"description": "Public endpoint. Free/Community plan ID auto-saved to freePlanId variable."
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "── STEP 3: User Applies ─────────────",
+			"item": [
+				{
+					"name": "5. POST Apply for Free Plan",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"const r = pm.response.json();",
+									"pm.test('Application submitted — status pending', () => {",
+									"    pm.expect(pm.response.code).to.equal(201);",
+									"    pm.expect(r.success).to.be.true;",
+									"    pm.expect(r.data.status).to.equal('pending');",
+									"    pm.collectionVariables.set('requestId', r.data.requestId);",
+									"    console.log('✅ Applied for free plan');",
+									"    console.log('📋 Request ID:', r.data.requestId);",
+									"    console.log('⏳ Status:', r.data.status);",
+									"    console.log('💬', r.data.message);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [{ "key": "token", "value": "{{userToken}}", "type": "string" }]
+						},
+						"method": "POST",
+						"header": [{ "key": "Content-Type", "value": "application/json" }],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"planId\": \"{{freePlanId}}\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/subscriptions/apply",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "subscriptions", "apply"]
+						},
+						"description": "User applies for free/community plan. Status becomes 'pending'. Request ID auto-saved."
+					},
+					"response": []
+				},
+				{
+					"name": "6. POST Login (Confirm Pending Approval)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"const r = pm.response.json();",
+									"if (pm.response.code === 200) {",
+									"    pm.collectionVariables.set('userToken', r.data.session.accessToken);",
+									"    console.log('✅ Login after apply');",
+									"    console.log('📋 SubscriptionPlan:', r.data.user.SubscriptionPlan);",
+									"    pm.test('SubscriptionPlan shows Pending Approval', () => {",
+									"        pm.expect(r.data.user.SubscriptionPlan).to.include('Pending Approval');",
+									"    });",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [{ "key": "Content-Type", "value": "application/json" }],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"email\": \"testfreeplan@example.com\",\n  \"password\": \"Test@123456\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/auth/login",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "auth", "login"]
+						},
+						"description": "Login after applying. SubscriptionPlan = 'Free (Pending Approval)'."
+					},
+					"response": []
+				},
+				{
+					"name": "7. ⛔ Try Protected Feature (Blocked)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"const r = pm.response.json();",
+									"pm.test('Blocked — SUBSCRIPTION_PENDING', () => {",
+									"    pm.expect(pm.response.code).to.equal(403);",
+									"    pm.expect(r.error.code).to.equal('SUBSCRIPTION_PENDING');",
+									"    console.log('✅ Correctly blocked — pending approval');",
+									"    console.log('💬', r.error.message);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [{ "key": "token", "value": "{{userToken}}", "type": "string" }]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/assessment/result",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "assessment", "result"]
+						},
+						"description": "Protected feature — should return 403 SUBSCRIPTION_PENDING while waiting for admin approval."
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "── STEP 4: Admin Setup ──────────────",
+			"item": [
+				{
+					"name": "8. POST Admin Login",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"const r = pm.response.json();",
+									"if (pm.response.code === 200) {",
+									"    pm.collectionVariables.set('adminToken', r.data.session.accessToken);",
+									"    console.log('✅ Admin logged in');",
+									"    pm.test('Admin login OK', () => {",
+									"        pm.expect(r.data.user.role).to.equal('admin');",
+									"    });",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [{ "key": "Content-Type", "value": "application/json" }],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"email\": \"admin@myemdr.com\",\n  \"password\": \"Admin@123456\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/auth/login",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "auth", "login"]
+						},
+						"description": "Admin login. Token auto-saved."
+					},
+					"response": []
+				},
+				{
+					"name": "9. GET Pending Requests (Admin)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"const r = pm.response.json();",
+									"pm.test('Pending requests listed', () => {",
+									"    pm.expect(pm.response.code).to.equal(200);",
+									"    console.log('📋 Total requests:', r.data.length);",
+									"    r.data.forEach(req => {",
+									"        const name = req.userId?.firstName + ' ' + req.userId?.lastName;",
+									"        console.log(` - [${req._id}] ${name} | ${req.userId?.email} | Status: ${req.status}`);",
+									"        if (req.status === 'pending') {",
+									"            pm.collectionVariables.set('requestId', req._id);",
+									"            console.log('🎯 Pending request ID saved:', req._id);",
+									"        }",
+									"    });",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [{ "key": "token", "value": "{{adminToken}}", "type": "string" }]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/subscriptions/admin/requests",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "subscriptions", "admin", "requests"]
+						},
+						"description": "Admin sees all pending requests. Request ID auto-saved."
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "── STEP 5: Admin Approves ───────────",
+			"item": [
+				{
+					"name": "10. ✅ PATCH Approve Request (Admin)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"const r = pm.response.json();",
+									"pm.test('Request approved', () => {",
+									"    pm.expect(pm.response.code).to.equal(200);",
+									"    pm.expect(r.data.status).to.equal('approved');",
+									"    console.log('✅ APPROVED!');",
+									"    console.log('💬', r.data.message);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [{ "key": "token", "value": "{{adminToken}}", "type": "string" }]
+						},
+						"method": "PATCH",
+						"header": [{ "key": "Content-Type", "value": "application/json" }],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"status\": \"approved\",\n  \"comment\": \"Welcome! Your free plan access has been approved.\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/subscriptions/admin/requests/{{requestId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "subscriptions", "admin", "requests", "{{requestId}}"]
+						},
+						"description": "Admin approves the request. UserSubscription status → active."
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "── STEP 6: User Gets Access ─────────",
+			"item": [
+				{
+					"name": "11. POST Login (Confirm Community Access)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"const r = pm.response.json();",
+									"if (pm.response.code === 200) {",
+									"    pm.collectionVariables.set('userToken', r.data.session.accessToken);",
+									"    console.log('✅ Login after approval');",
+									"    console.log('📋 SubscriptionPlan:', r.data.user.SubscriptionPlan);",
+									"    pm.test('SubscriptionPlan is now active (no Pending)', () => {",
+									"        pm.expect(r.data.user.SubscriptionPlan).to.not.include('Pending');",
+									"        pm.expect(r.data.user.SubscriptionPlan).to.not.equal('No Plan');",
+									"    });",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [{ "key": "Content-Type", "value": "application/json" }],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"email\": \"testfreeplan@example.com\",\n  \"password\": \"Test@123456\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/auth/login",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "auth", "login"]
+						},
+						"description": "Login after approval. SubscriptionPlan = 'Free' (no Pending Approval)."
+					},
+					"response": []
+				},
+				{
+					"name": "12. ✅ Access Protected Feature (Now Allowed)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"const r = pm.response.json();",
+									"pm.test('Access granted after approval', () => {",
+									"    pm.expect(pm.response.code).to.not.equal(403);",
+									"    console.log('✅ User now has full access!');",
+									"    console.log('Response code:', pm.response.code);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [{ "key": "token", "value": "{{userToken}}", "type": "string" }]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/assessment/result",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "assessment", "result"]
+						},
+						"description": "After admin approval — user can access all protected features ✅"
+					},
+					"response": []
+				},
+				{
+					"name": "13. GET My Subscription (Active)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"const r = pm.response.json();",
+									"pm.test('Subscription is active', () => {",
+									"    pm.expect(pm.response.code).to.equal(200);",
+									"    if (r.data) {",
+									"        console.log('✅ Subscription status:', r.data.status);",
+									"        console.log('📋 Plan:', r.data.planId?.name, '| Type:', r.data.planId?.type);",
+									"    }",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [{ "key": "token", "value": "{{userToken}}", "type": "string" }]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/subscriptions/my",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "subscriptions", "my"]
+						},
+						"description": "Verify subscription is active after approval."
+					},
+					"response": []
+				}
+			]
+		}
+	],
+	"variable": [
+		{ "key": "baseUrl",    "value": "http://localhost:5005", "type": "string" },
+		{ "key": "adminToken", "value": "", "type": "string" },
+		{ "key": "userToken",  "value": "", "type": "string" },
+		{ "key": "userId",     "value": "", "type": "string" },
+		{ "key": "freePlanId", "value": "69d445735c9931301211341a", "type": "string" },
+		{ "key": "requestId",  "value": "", "type": "string" },
+		{ "key": "devOtp",     "value": "", "type": "string" }
+	]
+}

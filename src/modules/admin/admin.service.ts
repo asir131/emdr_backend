@@ -4,6 +4,7 @@ import { Journey } from '../journey/journey.model';
 import { SessionProgress } from '../progress/sessionProgress.model';
 import { WatchTime } from '../progress/watchTime.model';
 import { Payment } from '../payment/payment.model';
+import { Assessment } from '../assessment/assessment.model';
 import { ApiError } from '../../utils/ApiError';
 import { redis } from '../../config/redis';
 import { logger } from '../../config/logger';
@@ -149,6 +150,154 @@ export const adminService = {
       phoneNumber: admin.phoneNumber || "", 
       role: admin.role, 
       avatar: admin.avatar 
+    };
+  },
+
+  /**
+   * GET All Free Users
+   * "Free users" = users with no active paid subscription
+   * Includes: no plan, community/free plan (active or pending), expired/canceled
+   */
+  async getFreeUsers(page = 1, limit = 10, search = '') {
+    const skip = (page - 1) * limit;
+
+    // Find all userIds that have an active PAID subscription (standard or premium)
+    const paidPlanIds = await SubscriptionPlan.find({
+      type: { $in: ['standard', 'premium'] },
+      isActive: true,
+    }).distinct('_id');
+
+    const paidUserIds = await UserSubscription.find({
+      planId: { $in: paidPlanIds },
+      status: SubscriptionStatus.ACTIVE,
+    }).distinct('userId');
+
+    // Build query: regular users, not deleted, NOT in paid list
+    const query: any = {
+      role: 'user',
+      isDeleted: false,
+      _id: { $nin: paidUserIds },
+    };
+
+    if (search) {
+      query.$or = [
+        { firstName: { $regex: search, $options: 'i' } },
+        { lastName:  { $regex: search, $options: 'i' } },
+        { email:     { $regex: search, $options: 'i' } },
+      ];
+    }
+
+    const [users, total] = await Promise.all([
+      User.find(query)
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limit)
+        .select('firstName lastName email status createdAt avatar')
+        .lean(),
+      User.countDocuments(query),
+    ]);
+
+    // Enrich with their latest subscription info
+    const enriched = await Promise.all(
+      users.map(async (u) => {
+        // Get most recent subscription (any status)
+        const sub = await UserSubscription.findOne({ userId: u._id })
+          .sort({ createdAt: -1 })
+          .populate('planId', 'name type price isCommunityAccess')
+          .lean();
+
+        // Determine subscription display status
+        let subscriptionInfo;
+        if (!sub) {
+          subscriptionInfo = { name: 'No Plan', type: 'free', status: 'none', approvalStatus: 'not_applied' };
+        } else if (sub.status === SubscriptionStatus.PENDING) {
+          subscriptionInfo = {
+            name: (sub.planId as any)?.name,
+            type: (sub.planId as any)?.type,
+            status: 'pending',
+            approvalStatus: 'awaiting_admin_approval',
+          };
+        } else {
+          subscriptionInfo = {
+            name: (sub.planId as any)?.name,
+            type: (sub.planId as any)?.type,
+            status: sub.status,
+            approvalStatus: sub.status === SubscriptionStatus.ACTIVE ? 'approved' : sub.status,
+          };
+        }
+
+        return {
+          id:           u._id,
+          name:         `${u.firstName} ${u.lastName}`,
+          email:        u.email,
+          avatar:       u.avatar || null,
+          status:       u.status || 'active',
+          joinedDate:   u.createdAt,
+          subscription: subscriptionInfo,
+        };
+      })
+    );
+
+    return {
+      users: enriched,
+      pagination: {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit),
+      },
+    };
+  },
+
+  /**
+   * GET User Assessment Results by userId (Admin)
+   * Returns all PHQ-9, GAD-7, DES-11 scores for a specific user
+   */
+  async getUserAssessments(userId: string) {
+    const user = await User.findOne({ _id: userId, isDeleted: false })
+      .select('firstName lastName email')
+      .lean();
+    if (!user) throw ApiError.userNotFound();
+
+    const assessments = await Assessment.find({ userId })
+      .sort({ createdAt: -1 })
+      .lean();
+
+    const formatted = assessments.map((a) => ({
+      assessmentId:   a._id,
+      status:         a.status,
+      isCompleted:    a.isCompleted,
+      currentStep:    a.currentStep,
+      submittedAt:    a.createdAt,
+
+      phq9: {
+        answers:  a.phq9Answers,
+        score:    a.phq9Score,
+        severity: a.phq9Severity,
+      },
+      gad7: {
+        answers:  a.gad7Answers,
+        score:    a.gad7Score,
+        severity: a.gad7Severity,
+      },
+      des11: {
+        answers: a.des11Answers,
+        score:   a.des11Score,
+      },
+
+      totalScore:               a.totalScore,
+      requiresProfessionalSupport: a.requiresProfessionalSupport,
+      recommendation:           a.recommendation,
+    }));
+
+    return {
+      user: {
+        id:        user._id,
+        name:      `${user.firstName} ${user.lastName}`,
+        email:     user.email,
+      },
+      totalAssessments: formatted.length,
+      assessments:      formatted,
     };
   },
 
