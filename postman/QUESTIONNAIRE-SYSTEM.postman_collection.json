@@ -1,0 +1,713 @@
+{
+	"info": {
+		"_postman_id": "questionnaire-system-001",
+		"name": "Questionnaire System — PHQ-9 / GAD-7 / DES-11",
+		"description": "Separate POST and GET endpoints for PHQ-9 (depression), GAD-7 (anxiety), and DES-11 (dissociation). Users can submit multiple times. Each submission is stored independently.",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "── SETUP ────────────────────────────",
+			"item": [
+				{
+					"name": "0. User Login",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"const r = pm.response.json();",
+									"if (pm.response.code === 200) {",
+									"    pm.collectionVariables.set('userToken', r.data.session.accessToken);",
+									"    pm.collectionVariables.set('userId', r.data.user.id);",
+									"    console.log('✅ User token saved');",
+									"    console.log('👤 User ID:', r.data.user.id);",
+									"    pm.test('Login OK', () => pm.expect(r.success).to.be.true);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [{ "key": "Content-Type", "value": "application/json" }],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"email\": \"testuser@example.com\",\n  \"password\": \"Test@123456\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/auth/login",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "auth", "login"]
+						},
+						"description": "⚠️ Change email/password to a real user. Token auto-saved."
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "── PHQ-9 (Depression) ───────────────",
+			"item": [
+				{
+					"name": "1. POST Submit PHQ-9",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"const r = pm.response.json();",
+									"pm.test('PHQ-9 submitted', () => {",
+									"    pm.expect(pm.response.code).to.equal(201);",
+									"    pm.expect(r.success).to.be.true;",
+									"    pm.expect(r.data.type).to.equal('phq9');",
+									"    pm.collectionVariables.set('phq9Id', r.data.id);",
+									"    console.log('✅ PHQ-9 submitted');",
+									"    console.log('🆔 ID:', r.data.id);",
+									"    console.log('📊 Score:', r.data.score, '| Severity:', r.data.severity);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [{ "key": "token", "value": "{{userToken}}", "type": "string" }]
+						},
+						"method": "POST",
+						"header": [{ "key": "Content-Type", "value": "application/json" }],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"answers\": [0, 0, 0, 0, 0, 0, 0, 0, 0]\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/questionnaire/phq9",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "questionnaire", "phq9"]
+						},
+						"description": "Submit PHQ-9 (depression). 9 answers, each 0–3.\n\n0=Not at all, 1=Several days, 2=More than half the days, 3=Nearly every day\n\nScore ranges:\n- 0–4: Minimal\n- 5–9: Mild\n- 10–14: Moderate\n- 15–19: Moderately Severe\n- 20–27: Severe"
+					},
+					"response": []
+				},
+				{
+					"name": "2. POST Submit PHQ-9 (Moderate Score)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"const r = pm.response.json();",
+									"pm.test('PHQ-9 moderate submitted', () => {",
+									"    pm.expect(pm.response.code).to.equal(201);",
+									"    pm.expect(r.data.severity).to.equal('moderate');",
+									"    console.log('✅ PHQ-9 moderate score submitted');",
+									"    console.log('📊 Score:', r.data.score, '| Severity:', r.data.severity);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [{ "key": "token", "value": "{{userToken}}", "type": "string" }]
+						},
+						"method": "POST",
+						"header": [{ "key": "Content-Type", "value": "application/json" }],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"answers\": [1, 2, 1, 2, 1, 1, 1, 1, 0]\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/questionnaire/phq9",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "questionnaire", "phq9"]
+						},
+						"description": "Submit PHQ-9 with moderate score (sum=10). Multiple submissions allowed."
+					},
+					"response": []
+				},
+				{
+					"name": "3. GET All PHQ-9 Submissions",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"const r = pm.response.json();",
+									"pm.test('All PHQ-9 submissions returned', () => {",
+									"    pm.expect(pm.response.code).to.equal(200);",
+									"    pm.expect(r.data.type).to.equal('phq9');",
+									"    pm.expect(r.data.submissions).to.be.an('array');",
+									"    console.log('✅ PHQ-9 submissions:', r.data.total);",
+									"    r.data.submissions.forEach((s, i) => {",
+									"        console.log(`  #${i+1} [${s.id}] Score: ${s.score} | ${s.severity} | ${s.submittedAt}`);",
+									"    });",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [{ "key": "token", "value": "{{userToken}}", "type": "string" }]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/questionnaire/phq9",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "questionnaire", "phq9"]
+						},
+						"description": "Get all PHQ-9 submissions for the logged-in user. Newest first."
+					},
+					"response": []
+				},
+				{
+					"name": "4. GET Single PHQ-9 by ID",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"const r = pm.response.json();",
+									"pm.test('Single PHQ-9 returned', () => {",
+									"    pm.expect(pm.response.code).to.equal(200);",
+									"    pm.expect(r.data.type).to.equal('phq9');",
+									"    console.log('✅ Single PHQ-9 fetched');",
+									"    console.log('📊 Score:', r.data.score, '| Severity:', r.data.severity);",
+									"    console.log('📝 Answers:', JSON.stringify(r.data.answers));",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [{ "key": "token", "value": "{{userToken}}", "type": "string" }]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/questionnaire/{{phq9Id}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "questionnaire", "{{phq9Id}}"]
+						},
+						"description": "Get a single PHQ-9 submission by ID. Uses phq9Id saved from POST request."
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "── GAD-7 (Anxiety) ──────────────────",
+			"item": [
+				{
+					"name": "5. POST Submit GAD-7",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"const r = pm.response.json();",
+									"pm.test('GAD-7 submitted', () => {",
+									"    pm.expect(pm.response.code).to.equal(201);",
+									"    pm.expect(r.data.type).to.equal('gad7');",
+									"    pm.collectionVariables.set('gad7Id', r.data.id);",
+									"    console.log('✅ GAD-7 submitted');",
+									"    console.log('🆔 ID:', r.data.id);",
+									"    console.log('📊 Score:', r.data.score, '| Severity:', r.data.severity);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [{ "key": "token", "value": "{{userToken}}", "type": "string" }]
+						},
+						"method": "POST",
+						"header": [{ "key": "Content-Type", "value": "application/json" }],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"answers\": [0, 0, 0, 0, 0, 0, 0]\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/questionnaire/gad7",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "questionnaire", "gad7"]
+						},
+						"description": "Submit GAD-7 (anxiety). 7 answers, each 0–3.\n\n0=Not at all, 1=Several days, 2=More than half the days, 3=Nearly every day\n\nScore ranges:\n- 0–4: Minimal\n- 5–9: Mild\n- 10–14: Moderate\n- 15–21: Severe"
+					},
+					"response": []
+				},
+				{
+					"name": "6. POST Submit GAD-7 (Mild Score)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"const r = pm.response.json();",
+									"pm.test('GAD-7 mild submitted', () => {",
+									"    pm.expect(pm.response.code).to.equal(201);",
+									"    pm.expect(r.data.severity).to.equal('mild');",
+									"    console.log('✅ GAD-7 mild score submitted');",
+									"    console.log('📊 Score:', r.data.score, '| Severity:', r.data.severity);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [{ "key": "token", "value": "{{userToken}}", "type": "string" }]
+						},
+						"method": "POST",
+						"header": [{ "key": "Content-Type", "value": "application/json" }],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"answers\": [1, 1, 1, 1, 1, 1, 0]\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/questionnaire/gad7",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "questionnaire", "gad7"]
+						},
+						"description": "Submit GAD-7 with mild score (sum=6). Multiple submissions allowed."
+					},
+					"response": []
+				},
+				{
+					"name": "7. GET All GAD-7 Submissions",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"const r = pm.response.json();",
+									"pm.test('All GAD-7 submissions returned', () => {",
+									"    pm.expect(pm.response.code).to.equal(200);",
+									"    pm.expect(r.data.type).to.equal('gad7');",
+									"    pm.expect(r.data.submissions).to.be.an('array');",
+									"    console.log('✅ GAD-7 submissions:', r.data.total);",
+									"    r.data.submissions.forEach((s, i) => {",
+									"        console.log(`  #${i+1} [${s.id}] Score: ${s.score} | ${s.severity} | ${s.submittedAt}`);",
+									"    });",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [{ "key": "token", "value": "{{userToken}}", "type": "string" }]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/questionnaire/gad7",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "questionnaire", "gad7"]
+						},
+						"description": "Get all GAD-7 submissions for the logged-in user. Newest first."
+					},
+					"response": []
+				},
+				{
+					"name": "8. GET Single GAD-7 by ID",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"const r = pm.response.json();",
+									"pm.test('Single GAD-7 returned', () => {",
+									"    pm.expect(pm.response.code).to.equal(200);",
+									"    pm.expect(r.data.type).to.equal('gad7');",
+									"    console.log('✅ Single GAD-7 fetched');",
+									"    console.log('📊 Score:', r.data.score, '| Severity:', r.data.severity);",
+									"    console.log('📝 Answers:', JSON.stringify(r.data.answers));",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [{ "key": "token", "value": "{{userToken}}", "type": "string" }]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/questionnaire/{{gad7Id}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "questionnaire", "{{gad7Id}}"]
+						},
+						"description": "Get a single GAD-7 submission by ID. Uses gad7Id saved from POST request."
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "── DES-11 (Dissociation) ────────────",
+			"item": [
+				{
+					"name": "9. POST Submit DES-11",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"const r = pm.response.json();",
+									"pm.test('DES-11 submitted', () => {",
+									"    pm.expect(pm.response.code).to.equal(201);",
+									"    pm.expect(r.data.type).to.equal('des11');",
+									"    pm.collectionVariables.set('des11Id', r.data.id);",
+									"    console.log('✅ DES-11 submitted');",
+									"    console.log('🆔 ID:', r.data.id);",
+									"    console.log('📊 Score (avg):', r.data.score);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [{ "key": "token", "value": "{{userToken}}", "type": "string" }]
+						},
+						"method": "POST",
+						"header": [{ "key": "Content-Type", "value": "application/json" }],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"answers\": [2.5, 2.5, 2.5, 2.5, 2.5, 2.5, 2.5, 2.5]\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/questionnaire/des11",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "questionnaire", "des11"]
+						},
+						"description": "Submit DES-11 (dissociation). 8 answers, each 0–100.\n\nScore = average of all answers.\n\nClinical threshold: score > 30 suggests significant dissociation."
+					},
+					"response": []
+				},
+				{
+					"name": "10. POST Submit DES-11 (High Score)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"const r = pm.response.json();",
+									"pm.test('DES-11 high score submitted', () => {",
+									"    pm.expect(pm.response.code).to.equal(201);",
+									"    console.log('✅ DES-11 high score submitted');",
+									"    console.log('📊 Score (avg):', r.data.score);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [{ "key": "token", "value": "{{userToken}}", "type": "string" }]
+						},
+						"method": "POST",
+						"header": [{ "key": "Content-Type", "value": "application/json" }],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"answers\": [40, 35, 45, 30, 50, 25, 40, 35]\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/questionnaire/des11",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "questionnaire", "des11"]
+						},
+						"description": "Submit DES-11 with high score (avg=37.5). Multiple submissions allowed."
+					},
+					"response": []
+				},
+				{
+					"name": "11. GET All DES-11 Submissions",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"const r = pm.response.json();",
+									"pm.test('All DES-11 submissions returned', () => {",
+									"    pm.expect(pm.response.code).to.equal(200);",
+									"    pm.expect(r.data.type).to.equal('des11');",
+									"    pm.expect(r.data.submissions).to.be.an('array');",
+									"    console.log('✅ DES-11 submissions:', r.data.total);",
+									"    r.data.submissions.forEach((s, i) => {",
+									"        console.log(`  #${i+1} [${s.id}] Score (avg): ${s.score} | ${s.submittedAt}`);",
+									"    });",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [{ "key": "token", "value": "{{userToken}}", "type": "string" }]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/questionnaire/des11",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "questionnaire", "des11"]
+						},
+						"description": "Get all DES-11 submissions for the logged-in user. Newest first."
+					},
+					"response": []
+				},
+				{
+					"name": "12. GET Single DES-11 by ID",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"const r = pm.response.json();",
+									"pm.test('Single DES-11 returned', () => {",
+									"    pm.expect(pm.response.code).to.equal(200);",
+									"    pm.expect(r.data.type).to.equal('des11');",
+									"    console.log('✅ Single DES-11 fetched');",
+									"    console.log('📊 Score (avg):', r.data.score);",
+									"    console.log('📝 Answers:', JSON.stringify(r.data.answers));",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [{ "key": "token", "value": "{{userToken}}", "type": "string" }]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/questionnaire/{{des11Id}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "questionnaire", "{{des11Id}}"]
+						},
+						"description": "Get a single DES-11 submission by ID. Uses des11Id saved from POST request."
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "── EDGE CASES ───────────────────────",
+			"item": [
+				{
+					"name": "❌ PHQ-9 Wrong Answer Count (400)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Wrong answer count rejected', () => {",
+									"    pm.expect(pm.response.code).to.equal(400);",
+									"    console.log('✅ Correctly rejected — PHQ-9 needs exactly 9 answers');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [{ "key": "token", "value": "{{userToken}}", "type": "string" }]
+						},
+						"method": "POST",
+						"header": [{ "key": "Content-Type", "value": "application/json" }],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"answers\": [0, 0, 0]\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/questionnaire/phq9",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "questionnaire", "phq9"]
+						},
+						"description": "Only 3 answers instead of 9 — should return 400 validation error."
+					},
+					"response": []
+				},
+				{
+					"name": "❌ PHQ-9 Answer Out of Range (400)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Out of range answer rejected', () => {",
+									"    pm.expect(pm.response.code).to.equal(400);",
+									"    console.log('✅ Correctly rejected — PHQ-9 answers must be 0–3');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [{ "key": "token", "value": "{{userToken}}", "type": "string" }]
+						},
+						"method": "POST",
+						"header": [{ "key": "Content-Type", "value": "application/json" }],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"answers\": [0, 0, 0, 0, 0, 0, 0, 0, 5]\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/questionnaire/phq9",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "questionnaire", "phq9"]
+						},
+						"description": "Last answer is 5 (max is 3) — should return 400 validation error."
+					},
+					"response": []
+				},
+				{
+					"name": "❌ DES-11 Answer Out of Range (400)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('DES-11 out of range rejected', () => {",
+									"    pm.expect(pm.response.code).to.equal(400);",
+									"    console.log('✅ Correctly rejected — DES-11 answers must be 0–100');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [{ "key": "token", "value": "{{userToken}}", "type": "string" }]
+						},
+						"method": "POST",
+						"header": [{ "key": "Content-Type", "value": "application/json" }],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"answers\": [2.5, 2.5, 2.5, 2.5, 2.5, 2.5, 2.5, 150]\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/questionnaire/des11",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "questionnaire", "des11"]
+						},
+						"description": "Last answer is 150 (max is 100) — should return 400 validation error."
+					},
+					"response": []
+				},
+				{
+					"name": "❌ Get Non-Existent ID (404)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Non-existent ID returns 404', () => {",
+									"    pm.expect(pm.response.code).to.equal(404);",
+									"    console.log('✅ Correctly returned 404');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [{ "key": "token", "value": "{{userToken}}", "type": "string" }]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/questionnaire/000000000000000000000000",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "questionnaire", "000000000000000000000000"]
+						},
+						"description": "Valid ObjectId format but doesn't exist — should return 404."
+					},
+					"response": []
+				},
+				{
+					"name": "❌ No Token (401)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('No token blocked', () => {",
+									"    pm.expect(pm.response.code).to.equal(401);",
+									"    console.log('✅ Correctly blocked — no token');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [{ "key": "Content-Type", "value": "application/json" }],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"answers\": [0, 0, 0, 0, 0, 0, 0, 0, 0]\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/questionnaire/phq9",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "questionnaire", "phq9"]
+						},
+						"description": "No Authorization header — should return 401."
+					},
+					"response": []
+				}
+			]
+		}
+	],
+	"variable": [
+		{ "key": "baseUrl",  "value": "http://localhost:5005", "type": "string" },
+		{ "key": "userToken","value": "", "type": "string" },
+		{ "key": "userId",   "value": "", "type": "string" },
+		{ "key": "phq9Id",   "value": "", "type": "string" },
+		{ "key": "gad7Id",   "value": "", "type": "string" },
+		{ "key": "des11Id",  "value": "", "type": "string" }
+	]
+}
