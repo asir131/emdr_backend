@@ -1,6 +1,8 @@
 import { Router } from 'express';
 import { emdrSessionController as ctrl } from './emdrSession.controller';
 import { authenticate } from '../../middleware/authMiddleware';
+import { requireSubscription } from '../../middleware/requireSubscription';
+import { requireSessionLimit } from '../../middleware/requireSessionLimit';
 import { validate } from '../../middleware/validate';
 import { upload } from '../../middleware/upload';
 import {

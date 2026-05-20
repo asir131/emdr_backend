@@ -7,6 +7,23 @@ import {
 import { ApiError } from '../../utils/ApiError';
 import { logger } from '../../config/logger';
 
+/**
+ * Calculate subscription end date based on plan.
+ * - Rockstar Plan (£950) → 6 months
+ * - All other plans      → 1 month
+ */
+function calcEndDate(plan: any, from: Date): Date {
+  const end = new Date(from);
+  const isRockstar = plan.name?.toLowerCase().includes('rockstar') ||
+                     (plan.price >= 900 && plan.interval === 'yearly');
+  if (isRockstar) {
+    end.setMonth(end.getMonth() + 6);
+  } else {
+    end.setMonth(end.getMonth() + 1);
+  }
+  return end;
+}
+
 export const subscriptionService = {
   /**
    * Get all active subscription plans
@@ -38,20 +55,32 @@ export const subscriptionService = {
       throw ApiError.validationError('Use the Apply for Access endpoint for this plan');
     }
 
-    // Standard logic: Deactivate old and create new
+    // Cancel old active subscriptions
     await UserSubscription.updateMany(
       { userId, status: SubscriptionStatus.ACTIVE },
       { status: SubscriptionStatus.CANCELED }
     );
 
+    const startDate = new Date();
+    const endDate   = calcEndDate(plan, startDate);
+
     const subscription = await UserSubscription.create({
       userId,
       planId,
-      status: SubscriptionStatus.ACTIVE,
-      startDate: new Date(),
+      status:    SubscriptionStatus.ACTIVE,
+      startDate,
+      endDate,
+      autoRenew: false,
     });
 
-    logger.info('User subscribed to plan', { userId, planId, subscriptionId: subscription._id });
+    logger.info('User subscribed to plan', {
+      userId,
+      planId,
+      planName: plan.name,
+      startDate,
+      endDate,
+      subscriptionId: subscription._id,
+    });
     return subscription;
   },
 
@@ -154,10 +183,10 @@ export const subscriptionService = {
         { status: SubscriptionStatus.CANCELED }
       );
 
-      // 1 month expiry from approval date
+      // 1 month (or 6 months for Rockstar) from approval date
       const startDate = new Date();
-      const endDate   = new Date(startDate);
-      endDate.setMonth(endDate.getMonth() + 1);
+      const planDoc   = await SubscriptionPlan.findById(request.planId).lean();
+      const endDate   = calcEndDate(planDoc, startDate);
 
       // Activate the pending subscription for this plan
       const updated = await UserSubscription.findOneAndUpdate(
@@ -183,8 +212,9 @@ export const subscriptionService = {
         });
       }
 
-      logger.info('Community Access approved — 1 month subscription activated', {
-        userId: request.userId,
+      logger.info('Community Access approved — subscription activated', {
+        userId:    request.userId,
+        planName:  planDoc?.name,
         startDate,
         endDate,
       });

@@ -15,6 +15,10 @@ import { swaggerSpec, swaggerCustomCss } from './config/swagger';
 
 const app = express();
 
+// Trust proxy — required when running behind Cloudflare tunnel or any reverse proxy
+// This allows express-rate-limit to correctly identify client IPs from X-Forwarded-For
+app.set('trust proxy', 1);
+
 // Security headers — configured to allow Swagger's internal assets
 app.use(helmet({
   contentSecurityPolicy: false, 
