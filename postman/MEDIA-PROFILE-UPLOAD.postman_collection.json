@@ -1,0 +1,474 @@
+{
+  "info": {
+    "_postman_id": "media-profile-upload-001",
+    "name": "Media — Profile Upload (imageProfile, videoProfile, musicProfile)",
+    "description": "Upload media with optional imageProfile, videoProfile, and musicProfile files. All profile fields are optional — upload only what you need.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl",     "value": "http://localhost:5005", "type": "string" },
+    { "key": "adminToken",  "value": "", "type": "string" },
+    { "key": "userToken",   "value": "", "type": "string" },
+    { "key": "categoryId",  "value": "", "type": "string" },
+    { "key": "mediaId",     "value": "", "type": "string" }
+  ],
+  "item": [
+    {
+      "name": "── SETUP ────────────────────────────",
+      "item": [
+        {
+          "name": "0a. Admin Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const r = pm.response.json();",
+                  "if (pm.response.code === 200) {",
+                  "    pm.collectionVariables.set('adminToken', r.data.session.accessToken);",
+                  "    console.log('✅ Admin token saved');",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"admin@myemdr.com\",\n  \"password\": \"Admin@123456\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/login",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "auth", "login"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "0b. Get Categories (Find categoryId)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const r = pm.response.json();",
+                  "if (r.data && r.data.length > 0) {",
+                  "    pm.collectionVariables.set('categoryId', r.data[0]._id);",
+                  "    console.log('✅ categoryId saved:', r.data[0]._id, '→', r.data[0].categoryName);",
+                  "    r.data.forEach(c => console.log(' -', c._id, c.categoryName));",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{adminToken}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/api/categories",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "categories"]
+            },
+            "description": "Get all categories. First category ID auto-saved to categoryId variable."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "── UPLOAD WITH PROFILES ─────────────",
+      "item": [
+        {
+          "name": "1. POST Upload — Main Image Only",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const r = pm.response.json();",
+                  "pm.test('Media uploaded', () => {",
+                  "    pm.expect(pm.response.code).to.equal(201);",
+                  "    pm.expect(r.success).to.be.true;",
+                  "    pm.collectionVariables.set('mediaId', r.data._id);",
+                  "    console.log('✅ Media uploaded');",
+                  "    console.log('🆔 ID:', r.data._id);",
+                  "    console.log('🖼️  URL:', r.data.url);",
+                  "    console.log('📁 Type:', r.data.mediaType);",
+                  "    console.log('🖼️  imageProfile:', r.data.imageProfile?.url ?? 'none');",
+                  "    console.log('🎬 videoProfile:', r.data.videoProfile?.url ?? 'none');",
+                  "    console.log('🎵 musicProfile:', r.data.musicProfile?.url ?? 'none');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Authorization", "value": "Bearer {{adminToken}}" }],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                { "key": "categoryId", "value": "{{categoryId}}", "type": "text" },
+                { "key": "name",       "value": "My Media Item",  "type": "text" },
+                { "key": "status",     "value": "active",         "type": "text" },
+                { "key": "image",      "type": "file", "src": "", "description": "⚠️ Select main file (image/video/audio)" }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/media",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "media"]
+            },
+            "description": "Upload main file only. imageProfile, videoProfile, musicProfile are all optional."
+          },
+          "response": []
+        },
+        {
+          "name": "2. POST Upload — Main + imageProfile",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const r = pm.response.json();",
+                  "pm.test('Media + imageProfile uploaded', () => {",
+                  "    pm.expect(pm.response.code).to.equal(201);",
+                  "    pm.expect(r.data.imageProfile).to.not.be.null;",
+                  "    pm.collectionVariables.set('mediaId', r.data._id);",
+                  "    console.log('✅ Media + imageProfile uploaded');",
+                  "    console.log('🖼️  Main URL:', r.data.url);",
+                  "    console.log('🖼️  imageProfile URL:', r.data.imageProfile?.url);",
+                  "    console.log('📦 imageProfile size:', r.data.imageProfile?.size, 'bytes');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Authorization", "value": "Bearer {{adminToken}}" }],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                { "key": "categoryId",    "value": "{{categoryId}}", "type": "text" },
+                { "key": "name",          "value": "Media with Image Profile", "type": "text" },
+                { "key": "status",        "value": "active", "type": "text" },
+                { "key": "image",         "type": "file", "src": "", "description": "⚠️ Main file" },
+                { "key": "imageProfile",  "type": "file", "src": "", "description": "⚠️ Thumbnail/cover image (JPG, PNG, WebP)" }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/media",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "media"]
+            },
+            "description": "Upload main file + imageProfile (thumbnail/cover image)."
+          },
+          "response": []
+        },
+        {
+          "name": "3. POST Upload — Main + videoProfile",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const r = pm.response.json();",
+                  "pm.test('Media + videoProfile uploaded', () => {",
+                  "    pm.expect(pm.response.code).to.equal(201);",
+                  "    pm.expect(r.data.videoProfile).to.not.be.null;",
+                  "    pm.collectionVariables.set('mediaId', r.data._id);",
+                  "    console.log('✅ Media + videoProfile uploaded');",
+                  "    console.log('🎬 videoProfile URL:', r.data.videoProfile?.url);",
+                  "    console.log('📦 videoProfile size:', r.data.videoProfile?.size, 'bytes');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Authorization", "value": "Bearer {{adminToken}}" }],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                { "key": "categoryId",   "value": "{{categoryId}}", "type": "text" },
+                { "key": "name",         "value": "Media with Video Profile", "type": "text" },
+                { "key": "status",       "value": "active", "type": "text" },
+                { "key": "image",        "type": "file", "src": "", "description": "⚠️ Main file" },
+                { "key": "videoProfile", "type": "file", "src": "", "description": "⚠️ Video file (MP4, WebM, MOV)" }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/media",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "media"]
+            },
+            "description": "Upload main file + videoProfile."
+          },
+          "response": []
+        },
+        {
+          "name": "4. POST Upload — Main + musicProfile",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const r = pm.response.json();",
+                  "pm.test('Media + musicProfile uploaded', () => {",
+                  "    pm.expect(pm.response.code).to.equal(201);",
+                  "    pm.expect(r.data.musicProfile).to.not.be.null;",
+                  "    pm.collectionVariables.set('mediaId', r.data._id);",
+                  "    console.log('✅ Media + musicProfile uploaded');",
+                  "    console.log('🎵 musicProfile URL:', r.data.musicProfile?.url);",
+                  "    console.log('📦 musicProfile size:', r.data.musicProfile?.size, 'bytes');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Authorization", "value": "Bearer {{adminToken}}" }],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                { "key": "categoryId",   "value": "{{categoryId}}", "type": "text" },
+                { "key": "name",         "value": "Media with Music Profile", "type": "text" },
+                { "key": "status",       "value": "active", "type": "text" },
+                { "key": "image",        "type": "file", "src": "", "description": "⚠️ Main file" },
+                { "key": "musicProfile", "type": "file", "src": "", "description": "⚠️ Audio file (MP3, WAV, AAC, OGG)" }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/media",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "media"]
+            },
+            "description": "Upload main file + musicProfile (audio)."
+          },
+          "response": []
+        },
+        {
+          "name": "5. POST Upload — All 3 Profiles",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const r = pm.response.json();",
+                  "pm.test('Media + all 3 profiles uploaded', () => {",
+                  "    pm.expect(pm.response.code).to.equal(201);",
+                  "    pm.collectionVariables.set('mediaId', r.data._id);",
+                  "    console.log('✅ Full upload with all profiles');",
+                  "    console.log('🆔 ID:', r.data._id);",
+                  "    console.log('📁 Main:', r.data.url, '|', r.data.mediaType);",
+                  "    console.log('🖼️  imageProfile:', r.data.imageProfile?.url ?? '❌ not uploaded');",
+                  "    console.log('🎬 videoProfile:', r.data.videoProfile?.url ?? '❌ not uploaded');",
+                  "    console.log('🎵 musicProfile:', r.data.musicProfile?.url ?? '❌ not uploaded');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Authorization", "value": "Bearer {{adminToken}}" }],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                { "key": "categoryId",   "value": "{{categoryId}}", "type": "text" },
+                { "key": "name",         "value": "Full Profile Media", "type": "text" },
+                { "key": "status",       "value": "active", "type": "text" },
+                { "key": "image",        "type": "file", "src": "", "description": "⚠️ Main file (required)" },
+                { "key": "imageProfile", "type": "file", "src": "", "description": "⚠️ Thumbnail image (optional)" },
+                { "key": "videoProfile", "type": "file", "src": "", "description": "⚠️ Video file (optional)" },
+                { "key": "musicProfile", "type": "file", "src": "", "description": "⚠️ Audio file (optional)" }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/media",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "media"]
+            },
+            "description": "Upload main file + all 3 profile files at once.\n\nForm fields:\n- image: main file (required)\n- imageProfile: thumbnail/cover image (optional)\n- videoProfile: video file (optional)\n- musicProfile: audio file (optional)"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "── GET & VERIFY ─────────────────────",
+      "item": [
+        {
+          "name": "6. GET Media by ID (Check Profiles)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const r = pm.response.json();",
+                  "pm.test('Media with profiles returned', () => {",
+                  "    pm.expect(pm.response.code).to.equal(200);",
+                  "    const d = r.data;",
+                  "    console.log('✅ Media fetched');",
+                  "    console.log('🆔 ID:', d._id);",
+                  "    console.log('📛 Name:', d.name);",
+                  "    console.log('📁 Main URL:', d.url);",
+                  "    console.log('📁 Type:', d.mediaType);",
+                  "    console.log('');",
+                  "    console.log('🖼️  imageProfile:', d.imageProfile ? d.imageProfile.url : 'null');",
+                  "    console.log('🎬 videoProfile:', d.videoProfile ? d.videoProfile.url : 'null');",
+                  "    console.log('🎵 musicProfile:', d.musicProfile ? d.musicProfile.url : 'null');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{adminToken}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/api/media/{{mediaId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "media", "{{mediaId}}"]
+            },
+            "description": "Fetch a single media item and verify all profile URLs are present."
+          },
+          "response": []
+        },
+        {
+          "name": "7. GET Category Media (Grouped by Type)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const r = pm.response.json();",
+                  "pm.test('Category media returned', () => {",
+                  "    pm.expect(pm.response.code).to.equal(200);",
+                  "    const d = r.data;",
+                  "    console.log('✅ Category media fetched');",
+                  "    console.log('📁 Category:', d.category.name);",
+                  "    console.log('🖼️  Images:', d.media.images.length);",
+                  "    console.log('🎬 Videos:', d.media.videos.length);",
+                  "    console.log('🎵 Musics:', d.media.musics.length);",
+                  "    console.log('📊 Total:', d.totalCount);",
+                  "    if (d.media.images.length > 0) {",
+                  "        const img = d.media.images[0];",
+                  "        console.log('--- First Image ---');",
+                  "        console.log('  URL:', img.url);",
+                  "        console.log('  imageProfile:', img.imageProfile?.url ?? 'none');",
+                  "        console.log('  videoProfile:', img.videoProfile?.url ?? 'none');",
+                  "        console.log('  musicProfile:', img.musicProfile?.url ?? 'none');",
+                  "    }",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{adminToken}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/api/categories/{{categoryId}}/media",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "categories", "{{categoryId}}", "media"]
+            },
+            "description": "Get all media in a category grouped by type (images, videos, musics). Each item shows its profile URLs."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "── EDGE CASES ───────────────────────",
+      "item": [
+        {
+          "name": "❌ No Main File (400)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('No file rejected', () => {",
+                  "    pm.expect(pm.response.code).to.equal(500);",
+                  "    console.log('✅ Correctly rejected — main file required');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Authorization", "value": "Bearer {{adminToken}}" }],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                { "key": "categoryId", "value": "{{categoryId}}", "type": "text" },
+                { "key": "name",       "value": "No File Test",   "type": "text" }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/media",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "media"]
+            },
+            "description": "No main file — should return error."
+          },
+          "response": []
+        },
+        {
+          "name": "❌ Non-Admin Token (403)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Non-admin blocked', () => {",
+                  "    pm.expect(pm.response.code).to.equal(403);",
+                  "    console.log('✅ Correctly blocked — admin only');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Authorization", "value": "Bearer {{userToken}}" }],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                { "key": "categoryId", "value": "{{categoryId}}", "type": "text" },
+                { "key": "name",       "value": "Test",           "type": "text" },
+                { "key": "image",      "type": "file", "src": "" }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/media",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "media"]
+            },
+            "description": "Regular user token — should return 403."
+          },
+          "response": []
+        }
+      ]
+    }
+  ]
+}

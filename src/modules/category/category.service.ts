@@ -130,7 +130,7 @@ export const categoryService = {
     if (!category) throw ApiError.notFound('Category not found');
 
     const mediaList = await Media.find({ categoryId, status: 'active' })
-      .select('name url mediaType duration size createdAt')
+      .select('name url mediaType duration size imageProfile videoProfile musicProfile createdAt')
       .sort({ createdAt: -1 })
       .lean();
 
@@ -165,6 +165,11 @@ export const mediaService = {
     name: string,
     status: 'active' | 'inactive',
     file: Express.Multer.File,
+    profileFiles?: {
+      imageProfile?: Express.Multer.File;
+      videoProfile?: Express.Multer.File;
+      musicProfile?: Express.Multer.File;
+    },
   ) {
     const category = await Category.findById(categoryId);
     if (!category) throw ApiError.notFound('Category not found');
@@ -188,16 +193,51 @@ export const mediaService = {
 
     const uploaded = await uploadToCloudinary(file.buffer, publicId, resourceType);
 
+    // ── Upload profile files in parallel ─────────────────────────────────────
+    const getResourceType = (file: Express.Multer.File): 'image' | 'video' | 'raw' => {
+      const mime = file.mimetype;
+      if (mime.startsWith('image/')) return 'image';
+      if (mime.startsWith('video/') || mime.startsWith('audio/')) return 'video';
+      return 'raw';
+    };
+
+    const [imgProfile, vidProfile, musProfile] = await Promise.all([
+      profileFiles?.imageProfile
+        ? uploadToCloudinary(
+            profileFiles.imageProfile.buffer,
+            `${publicId}_imgProfile`,
+            getResourceType(profileFiles.imageProfile)
+          )
+        : Promise.resolve(null),
+      profileFiles?.videoProfile
+        ? uploadToCloudinary(
+            profileFiles.videoProfile.buffer,
+            `${publicId}_vidProfile`,
+            getResourceType(profileFiles.videoProfile)
+          )
+        : Promise.resolve(null),
+      profileFiles?.musicProfile
+        ? uploadToCloudinary(
+            profileFiles.musicProfile.buffer,
+            `${publicId}_musProfile`,
+            getResourceType(profileFiles.musicProfile)
+          )
+        : Promise.resolve(null),
+    ]);
+
     const media = await Media.create({
       categoryId,
       name,
-      url: uploaded.url,
-      publicId: uploaded.publicId,
+      url:          uploaded.url,
+      publicId:     uploaded.publicId,
       mediaType,
       originalName: file.originalname,
-      size: uploaded.size,
+      size:         uploaded.size,
       status,
-      uploadedBy: userId,
+      uploadedBy:   userId,
+      imageProfile: imgProfile ? { url: imgProfile.url, publicId: imgProfile.publicId, size: imgProfile.size } : undefined,
+      videoProfile: vidProfile ? { url: vidProfile.url, publicId: vidProfile.publicId, size: vidProfile.size } : undefined,
+      musicProfile: musProfile ? { url: musProfile.url, publicId: musProfile.publicId, size: musProfile.size } : undefined,
     });
 
     logger.info('Media uploaded', { id: media._id, categoryId, mediaType });

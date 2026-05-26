@@ -35,9 +35,21 @@ export const categoryController = {
 export const mediaController = {
   upload: async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
-      if (!req.file) throw new Error('No file uploaded');
+      const files = req.files as Record<string, Express.Multer.File[]> | undefined;
+      const mainFile = files?.['image']?.[0] ?? (req.file as Express.Multer.File | undefined);
+      if (!mainFile) throw new Error('No file uploaded');
+
       const { categoryId, name, status = 'active' } = req.body;
-      ok(res, await mediaService.upload(req.user!.userId, categoryId, name, status, req.file), 201);
+
+      const profileFiles = {
+        imageProfile: files?.['imageProfile']?.[0],
+        videoProfile: files?.['videoProfile']?.[0],
+        musicProfile: files?.['musicProfile']?.[0],
+      };
+
+      ok(res, await mediaService.upload(
+        req.user!.userId, categoryId, name, status, mainFile, profileFiles
+      ), 201);
     } catch (e) { next(e); }
   },
   list: async (req: AuthRequest, res: Response, next: NextFunction) => {

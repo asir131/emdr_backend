@@ -28,7 +28,12 @@ router.get('/categories/:id/media', validate(idParamSchema), categoryController.
 
 router.get('/media', validate(listQuerySchema), mediaController.list);
 router.get('/media/:id', validate(idParamSchema), mediaController.getById);
-router.post('/media', requireAdmin, upload.single('image'), validate(createMediaSchema), mediaController.upload);
+router.post('/media', requireAdmin, upload.fields([
+  { name: 'image',        maxCount: 1 },
+  { name: 'imageProfile', maxCount: 1 },
+  { name: 'videoProfile', maxCount: 1 },
+  { name: 'musicProfile', maxCount: 1 },
+]), validate(createMediaSchema), mediaController.upload);
 router.put('/media/:id', requireAdmin, validate(updateMediaSchema), mediaController.update);
 router.delete('/media/:id', requireAdmin, validate(idParamSchema), mediaController.delete);
 
