@@ -39,7 +39,7 @@ export const mediaController = {
       const mainFile = files?.['image']?.[0] ?? (req.file as Express.Multer.File | undefined);
       if (!mainFile) throw new Error('No file uploaded');
 
-      const { categoryId, name, status = 'active' } = req.body;
+      const { categoryId, name, status = 'active', defaultFacing, bilateralAudioProfile } = req.body;
 
       const profileFiles = {
         imageProfile: files?.['imageProfile']?.[0],
@@ -48,7 +48,7 @@ export const mediaController = {
       };
 
       ok(res, await mediaService.upload(
-        req.user!.userId, categoryId, name, status, mainFile, profileFiles
+        req.user!.userId, categoryId, name, status, mainFile, profileFiles, bilateralAudioProfile, defaultFacing
       ), 201);
     } catch (e) { next(e); }
   },

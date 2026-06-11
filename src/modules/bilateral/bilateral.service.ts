@@ -137,9 +137,10 @@ export const settingsService = {
     direction: DirectionType;
     speed: SpeedType;
   }) {
+    const direction = (data.direction as string) === 'left-right' ? 'horizontal' : data.direction;
     const settings = await UserBilateralSettings.findOneAndUpdate(
       { userId },
-      { ...data, userId },
+      { ...data, direction, userId },
       { upsert: true, new: true, runValidators: true }
     ).lean();
 

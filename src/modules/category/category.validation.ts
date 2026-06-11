@@ -1,6 +1,30 @@
 import { z } from 'zod';
 
 const objectId = z.string().regex(/^[a-f\d]{24}$/i, 'Invalid ID');
+const bilateralAudioProfileSchema = z.object({
+  mode: z.enum(['one-shot', 'two-hit-stereo', 'stereo-track', 'unknown']),
+  durationSec: z.coerce.number().min(0).optional(),
+  hits: z.array(z.object({
+    timeSec: z.coerce.number().min(0),
+    side: z.enum(['left', 'right', 'center']),
+  })).max(32).optional(),
+  beatIntervalMs: z.coerce.number().min(0).optional(),
+  firstBeatSide: z.enum(['left', 'right', 'center']).optional(),
+  preserveOriginalPan: z.coerce.boolean().optional(),
+  analysisStatus: z.enum(['pending', 'success', 'failed']).optional(),
+  analysisError: z.string().max(1000).optional(),
+});
+
+const optionalJsonProfile = z.preprocess((value) => {
+  if (typeof value !== 'string') return value;
+  if (!value.trim()) return undefined;
+
+  try {
+    return JSON.parse(value);
+  } catch {
+    return value;
+  }
+}, bilateralAudioProfileSchema.optional());
 
 // ── Category ──────────────────────────────────────────────────────────────
 export const createCategorySchema = z.object({
@@ -22,6 +46,8 @@ export const updateCategorySchema = z.object({
     name:       z.string({ required_error: 'Name is required' }).min(1).max(200).trim(),
     categoryId: objectId,
     status:     z.enum(['active', 'inactive']).default('active'),
+    defaultFacing: z.enum(['left', 'right']).optional(),
+    bilateralAudioProfile: optionalJsonProfile,
   }),
 });
 
@@ -30,6 +56,8 @@ export const updateMediaSchema = z.object({
   body: z.object({
     categoryId: objectId.optional(),
     status:     z.enum(['active', 'inactive']).optional(),
+    defaultFacing: z.enum(['left', 'right']).optional(),
+    bilateralAudioProfile: bilateralAudioProfileSchema.optional(),
   }),
 });
 

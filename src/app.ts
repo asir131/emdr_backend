@@ -15,6 +15,36 @@ import { swaggerSpec, swaggerCustomCss } from './config/swagger';
 
 const app = express();
 
+const allowedHeaders = [
+  'Authorization',
+  'Content-Type',
+  'Accept',
+  'Origin',
+  'X-Requested-With',
+  'ngrok-skip-browser-warning',
+];
+
+const corsOptions: cors.CorsOptions = {
+  origin: (origin, callback) => {
+    // In dev, allow and echo any origin to satisfy browser credential security
+    if (!origin || env.NODE_ENV === 'development') {
+      callback(null, true);
+      return;
+    }
+
+    const allowed = env.ALLOWED_ORIGINS.split(',').map(o => o.trim()).filter(Boolean);
+    if (allowed.includes(origin) || allowed.includes('*')) {
+      callback(null, true);
+      return;
+    }
+
+    callback(new Error('Not allowed by CORS'));
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowedHeaders,
+};
+
 // Trust proxy — required when running behind Cloudflare tunnel or any reverse proxy
 // This allows express-rate-limit to correctly identify client IPs from X-Forwarded-For
 app.set('trust proxy', 1);
@@ -25,22 +55,8 @@ app.use(helmet({
 }));
 
 // CORS — Dynamic origin to support tunnel & multiple devices
-app.use(cors({
-  origin: (origin, callback) => {
-    // In dev, allow and echo any origin to satisfy browser credential security
-    if (!origin || env.NODE_ENV === 'development') {
-      callback(null, true);
-    } else {
-      const allowed = env.ALLOWED_ORIGINS.split(',').map(o => o.trim());
-      if (allowed.includes(origin) || allowed.includes('*')) {
-        callback(null, true);
-      } else {
-        callback(new Error('Not allowed by CORS'));
-      }
-    }
-  },
-  credentials: true,
-}));
+app.use(cors(corsOptions));
+app.options('*', cors(corsOptions));
 
 // NoSQL injection prevention
 app.use(mongoSanitize());

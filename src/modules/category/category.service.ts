@@ -1,5 +1,5 @@
 import { Category } from './category.model';
-import { Media } from './media.model';
+import { IBilateralAudioProfile, Media, MediaDefaultFacing } from './media.model';
 import { ApiError } from '../../utils/ApiError';
 import { cloudinary } from '../../config/cloudinary';
 import { logger } from '../../config/logger';
@@ -130,7 +130,7 @@ export const categoryService = {
     if (!category) throw ApiError.notFound('Category not found');
 
     const mediaList = await Media.find({ categoryId, status: 'active' })
-      .select('name url mediaType duration size imageProfile videoProfile musicProfile createdAt')
+      .select('name url mediaType duration size imageProfile videoProfile musicProfile defaultFacing bilateralAudioProfile createdAt')
       .sort({ createdAt: -1 })
       .lean();
 
@@ -170,6 +170,8 @@ export const mediaService = {
       videoProfile?: Express.Multer.File;
       musicProfile?: Express.Multer.File;
     },
+    bilateralAudioProfile?: IBilateralAudioProfile,
+    defaultFacing?: MediaDefaultFacing,
   ) {
     const category = await Category.findById(categoryId);
     if (!category) throw ApiError.notFound('Category not found');
@@ -234,7 +236,9 @@ export const mediaService = {
       originalName: file.originalname,
       size:         uploaded.size,
       status,
+      defaultFacing,
       uploadedBy:   userId,
+      bilateralAudioProfile,
       imageProfile: imgProfile ? { url: imgProfile.url, publicId: imgProfile.publicId, size: imgProfile.size } : undefined,
       videoProfile: vidProfile ? { url: vidProfile.url, publicId: vidProfile.publicId, size: vidProfile.size } : undefined,
       musicProfile: musProfile ? { url: musProfile.url, publicId: musProfile.publicId, size: musProfile.size } : undefined,
@@ -280,7 +284,7 @@ export const mediaService = {
     return media;
   },
 
-  async update(id: string, data: { categoryId?: string; status?: 'active' | 'inactive' }) {
+  async update(id: string, data: { categoryId?: string; status?: 'active' | 'inactive'; defaultFacing?: MediaDefaultFacing; bilateralAudioProfile?: IBilateralAudioProfile }) {
     if (data.categoryId) {
       const cat = await Category.findById(data.categoryId);
       if (!cat) throw ApiError.notFound('Category not found');

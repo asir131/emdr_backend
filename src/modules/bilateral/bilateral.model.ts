@@ -30,7 +30,7 @@ bilateralItemSchema.index({ type: 1, isActive: 1, sortOrder: 1 });
 export const BilateralItem = mongoose.model<IBilateralItem>('BilateralItem', bilateralItemSchema);
 
 // ── User Settings ─────────────────────────────────────────────────────────
-export type DirectionType = 'left-right' | 'diagonal-down' | 'diagonal-up';
+export type DirectionType = 'horizontal' | 'vertical' | 'diagonal-down' | 'diagonal-up';
 export type SpeedType     = 'slow' | 'medium' | 'fast';
 
 export interface IUserBilateralSettings extends Document {
@@ -49,7 +49,7 @@ const userSettingsSchema = new Schema<IUserBilateralSettings>(
     environmentId: { type: String, required: true },
     iconUrl:       { type: String, required: true },
     soundId:       { type: String, required: true },
-    direction:     { type: String, enum: ['left-right', 'diagonal-down', 'diagonal-up'], default: 'left-right' },
+    direction:     { type: String, enum: ['horizontal', 'vertical', 'diagonal-down', 'diagonal-up'], default: 'horizontal' },
     speed:         { type: String, enum: ['slow', 'medium', 'fast'], default: 'medium' },
   },
   { timestamps: true }

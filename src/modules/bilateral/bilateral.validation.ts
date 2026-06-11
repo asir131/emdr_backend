@@ -1,6 +1,10 @@
 import { z } from 'zod';
 
 const objectId = z.string().regex(/^[a-f\d]{24}$/i, 'Invalid ID');
+const directionSchema = z.preprocess(
+  (value) => value === 'left-right' ? 'horizontal' : value,
+  z.enum(['horizontal', 'vertical', 'diagonal-down', 'diagonal-up'])
+);
 
 export const createItemSchema = z.object({
   body: z.object({
@@ -38,7 +42,7 @@ export const saveSettingsSchema = z.object({
     environmentId: z.string({ required_error: 'environmentId (image URL) is required' }).url('Invalid URL'),
     iconUrl:       z.string({ required_error: 'iconUrl is required' }).url('Invalid URL'),
     soundId:       z.string({ required_error: 'soundId (audio URL) is required' }).url('Invalid URL'),
-    direction:     z.enum(['left-right', 'diagonal-down', 'diagonal-up']).default('left-right'),
+    direction:     directionSchema.default('horizontal'),
     speed:         z.enum(['slow', 'medium', 'fast']).default('medium'),
   }),
 });
