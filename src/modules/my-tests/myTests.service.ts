@@ -107,7 +107,7 @@ export const myTestsService = {
     const category = await TestCategory.create({
       userId: new mongoose.Types.ObjectId(userId),
       categoryName: payload.categoryName,
-      description: payload.description || null,
+      description: payload.description ?? undefined,
     });
 
     logger.info('Test category created', {

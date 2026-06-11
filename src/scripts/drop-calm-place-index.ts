@@ -4,7 +4,7 @@ import { CalmPlace } from '../modules/calm-place/calmPlace.model';
 
 async function dropIndex() {
   try {
-    await mongoose.connect(env.MONGODB_URI);
+    await mongoose.connect(env.DATABASE_URL);
     console.log('Connected to database');
     
     await CalmPlace.collection.dropIndex('userId_1');

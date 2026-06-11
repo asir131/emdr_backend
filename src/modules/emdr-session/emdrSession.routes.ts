@@ -1,8 +1,6 @@
 import { Router } from 'express';
 import { emdrSessionController as ctrl } from './emdrSession.controller';
 import { authenticate } from '../../middleware/authMiddleware';
-import { requireSubscription } from '../../middleware/requireSubscription';
-import { requireSessionLimit } from '../../middleware/requireSessionLimit';
 import { validate } from '../../middleware/validate';
 import { upload } from '../../middleware/upload';
 import {
@@ -13,6 +11,8 @@ import {
   saveSudSchema,
   saveAddictionSchema,
   completeSessionSchema,
+  saveProcessingStateSchema,
+  saveProcessingResultSchema,
   idParamSchema,
 } from './emdrSession.validation';
 
@@ -105,6 +105,22 @@ router.patch('/:id/addiction', validate(saveAddictionSchema), ctrl.saveAddiction
  * Mark a ready_for_bls session as fully completed (called after BLS finishes).
  */
 router.patch('/:id/complete', validate(completeSessionSchema), ctrl.completeSession);
+
+router.get('/:id/processing-state', validate(idParamSchema), ctrl.getProcessingState);
+
+router.patch(
+  '/:id/processing-state',
+  validate(saveProcessingStateSchema),
+  ctrl.saveProcessingState
+);
+
+router.delete('/:id/processing-state', validate(idParamSchema), ctrl.clearProcessingState);
+
+router.patch(
+  '/:id/processing-result',
+  validate(saveProcessingResultSchema),
+  ctrl.saveProcessingResult
+);
 
 /**
  * PATCH /api/emdr-session/:id/abandon

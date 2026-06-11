@@ -67,7 +67,7 @@ export const assessmentService = {
     const user = await User.findById(userId).select('email');
     if (!user) throw ApiError.notFound('User not found');
 
-    const assessment = await Assessment.findOneAndUpdate(
+    await Assessment.findOneAndUpdate(
       { userId, isCompleted: false },
       { phq9Answers, phq9Score, phq9Severity, currentStep: 'gad7', email: user.email },
       { upsert: true, new: true }
@@ -82,7 +82,7 @@ export const assessmentService = {
   async submitGad7(userId: string, gad7Answers: number[]) {
     const assessment = await Assessment.findOne({ userId, isCompleted: false });
     if (!assessment || assessment.currentStep !== 'gad7') {
-      throw ApiError.badRequest('Please complete PHQ-9 first.');
+      throw ApiError.validationError('Please complete PHQ-9 first.');
     }
 
     const gad7Score = gad7Answers.reduce((a, b) => a + b, 0);
@@ -107,7 +107,7 @@ export const assessmentService = {
   async submitDes11(userId: string, des11Answers: number[]) {
     const assessment = await Assessment.findOne({ userId, isCompleted: false });
     if (!assessment || assessment.currentStep !== 'des11') {
-      throw ApiError.badRequest('Please complete previous assessment parts first.');
+      throw ApiError.validationError('Please complete previous assessment parts first.');
     }
 
     assessment.des11Answers = des11Answers;

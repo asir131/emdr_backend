@@ -1,7 +1,7 @@
 import app from './app';
 import { env } from './config/env';
 import database from './config/database';
-import { redis, redisAvailable } from './config/redis';
+import { redis } from './config/redis';
 import { startNotificationWorker } from './config/queue';
 import { logger } from './config/logger';
 

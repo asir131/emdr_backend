@@ -2,6 +2,7 @@ import mongoose from 'mongoose';
 import { EmdrSession, IEmdrSession, SessionType, IBeliefPair, IAddictionContext } from './emdrSession.model';
 import { ApiError } from '../../utils/ApiError';
 import { logger } from '../../config/logger';
+import { generateRoadmapSummaryAudio } from './roadmapSummaryAudio.service';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // TYPES
@@ -46,6 +47,20 @@ async function findOwned(sessionId: string, userId: string): Promise<IEmdrSessio
 async function markReadyForBls(session: IEmdrSession): Promise<IEmdrSession> {
   session.status      = 'ready_for_bls';
   session.completedAt = new Date();
+  return session.save();
+}
+
+async function ensureRoadmapSummaryAudio(session: IEmdrSession): Promise<IEmdrSession> {
+  if (session.roadmapSummaryAudioUrl && session.roadmapSummaryText) return session;
+
+  const generated = await generateRoadmapSummaryAudio(session);
+  session.roadmapSummaryText = generated.text;
+
+  if (generated.audioUrl) {
+    session.roadmapSummaryAudioUrl = generated.audioUrl;
+    session.roadmapSummaryAudioGeneratedAt = new Date();
+  }
+
   return session.save();
 }
 
@@ -257,7 +272,7 @@ export const emdrSessionService = {
     }
 
     session.sudRating = sudRating;
-    const saved = await markReadyForBls(session);
+    const saved = await ensureRoadmapSummaryAudio(await markReadyForBls(session));
 
     logger.info('EMDR session SUD saved — status: ready_for_bls', {
       sessionId,
@@ -291,7 +306,7 @@ export const emdrSessionService = {
     }
 
     session.addictionContext = addictionContext;
-    const saved = await markReadyForBls(session);
+    const saved = await ensureRoadmapSummaryAudio(await markReadyForBls(session));
 
     logger.info('EMDR addiction context saved — status: ready_for_bls', {
       sessionId,
@@ -315,6 +330,7 @@ export const emdrSessionService = {
       );
     }
 
+    await ensureRoadmapSummaryAudio(session);
     session.status = 'completed';
     await session.save();
 
@@ -325,6 +341,57 @@ export const emdrSessionService = {
   // ───────────────────────────────────────────────────────────────────────────
   // 8. ABANDON SESSION  (user closes / discards a draft)
   // ───────────────────────────────────────────────────────────────────────────
+  async saveProcessingState(
+    sessionId: string,
+    userId: string,
+    processingState: Record<string, unknown> | null,
+  ): Promise<IEmdrSession> {
+    const session = await findOwned(sessionId, userId);
+
+    session.processingState = processingState;
+    await session.save();
+
+    logger.info('EMDR processing state saved', { sessionId, userId });
+    return session;
+  },
+
+  async getProcessingState(
+    sessionId: string,
+    userId: string,
+  ): Promise<Record<string, unknown> | null> {
+    const session = await findOwned(sessionId, userId);
+    return session.processingState || null;
+  },
+
+  async clearProcessingState(sessionId: string, userId: string): Promise<IEmdrSession> {
+    const session = await findOwned(sessionId, userId);
+
+    session.processingState = null;
+    await session.save();
+
+    logger.info('EMDR processing state cleared', { sessionId, userId });
+    return session;
+  },
+
+  async saveProcessingResult(
+    sessionId: string,
+    userId: string,
+    processingResult: Record<string, unknown>,
+  ): Promise<IEmdrSession> {
+    const session = await findOwned(sessionId, userId);
+
+    session.processingResult = processingResult;
+    session.processingCompletedAt = new Date();
+    session.processingState = null;
+    if (session.status !== 'abandoned') {
+      session.status = 'completed';
+    }
+    await session.save();
+
+    logger.info('EMDR processing result saved', { sessionId, userId });
+    return session;
+  },
+
   async abandonSession(sessionId: string, userId: string): Promise<{ message: string }> {
     const session = await findOwned(sessionId, userId);
 

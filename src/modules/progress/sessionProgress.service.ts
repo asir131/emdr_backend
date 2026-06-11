@@ -1,5 +1,4 @@
 import { SessionProgress } from './sessionProgress.model';
-import { ApiError } from '../../utils/ApiError';
 import { logger } from '../../config/logger';
 
 export const sessionProgressService = {

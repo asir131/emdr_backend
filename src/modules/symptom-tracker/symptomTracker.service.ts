@@ -297,4 +297,67 @@ export const symptomTrackerService = {
 
     return latest;
   },
+
+  async adminListSubmissions(filters: {
+    trackerType?: string;
+    userId?: string;
+    page?: number;
+    limit?: number;
+  }) {
+    const page = filters.page ?? 1;
+    const limit = filters.limit ?? 20;
+    const skip = (page - 1) * limit;
+
+    const query: Record<string, unknown> = {};
+    if (filters.trackerType) query.trackerType = filters.trackerType.toLowerCase();
+    if (filters.userId) query.userId = new mongoose.Types.ObjectId(filters.userId);
+
+    const [submissions, total] = await Promise.all([
+      SymptomTrackerSubmission.find(query)
+        .populate('userId', 'firstName lastName email')
+        .sort({ submittedAt: -1 })
+        .skip(skip)
+        .limit(limit)
+        .lean(),
+      SymptomTrackerSubmission.countDocuments(query),
+    ]);
+
+    return {
+      submissions,
+      pagination: {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit),
+        hasNextPage: page * limit < total,
+      },
+    };
+  },
+
+  async adminStats() {
+    const [totalSubmissions, byTrackerType, bySeverityBand] = await Promise.all([
+      SymptomTrackerSubmission.countDocuments(),
+      SymptomTrackerSubmission.aggregate([
+        { $group: { _id: '$trackerType', count: { $sum: 1 }, avgScore: { $avg: '$totalScore' } } },
+        { $sort: { count: -1 } },
+      ]),
+      SymptomTrackerSubmission.aggregate([
+        { $group: { _id: '$severityBand', count: { $sum: 1 } } },
+        { $sort: { count: -1 } },
+      ]),
+    ]);
+
+    return {
+      totalSubmissions,
+      byTrackerType: byTrackerType.map((item) => ({
+        trackerType: item._id,
+        count: item.count,
+        avgScore: Math.round(item.avgScore * 10) / 10,
+      })),
+      bySeverityBand: bySeverityBand.map((item) => ({
+        severityBand: item._id,
+        count: item.count,
+      })),
+    };
+  },
 };

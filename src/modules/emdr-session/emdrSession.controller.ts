@@ -109,6 +109,48 @@ export const emdrSessionController = {
   },
 
   // ── 8. PATCH /api/emdr-session/:id/abandon ───────────────────────────────
+  saveProcessingState: async (req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const session = await emdrSessionService.saveProcessingState(
+        req.params.id,
+        req.user!.userId,
+        req.body.processingState,
+      );
+      ok(res, session);
+    } catch (e) { next(e); }
+  },
+
+  getProcessingState: async (req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const processingState = await emdrSessionService.getProcessingState(
+        req.params.id,
+        req.user!.userId,
+      );
+      ok(res, processingState);
+    } catch (e) { next(e); }
+  },
+
+  clearProcessingState: async (req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const session = await emdrSessionService.clearProcessingState(
+        req.params.id,
+        req.user!.userId,
+      );
+      ok(res, session);
+    } catch (e) { next(e); }
+  },
+
+  saveProcessingResult: async (req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const session = await emdrSessionService.saveProcessingResult(
+        req.params.id,
+        req.user!.userId,
+        req.body.processingResult,
+      );
+      ok(res, session);
+    } catch (e) { next(e); }
+  },
+
   abandonSession: async (req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
     try {
       const result = await emdrSessionService.abandonSession(

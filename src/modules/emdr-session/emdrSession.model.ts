@@ -93,6 +93,12 @@ export interface IEmdrSession extends Document {
   addictionContext: IAddictionContext | null;
 
   // ── Metadata ──────────────────────────────────────────────────────────────
+  roadmapSummaryText: string | null;
+  roadmapSummaryAudioUrl: string | null;
+  roadmapSummaryAudioGeneratedAt: Date | null;
+  processingState: Record<string, unknown> | null;
+  processingResult: Record<string, unknown> | null;
+  processingCompletedAt: Date | null;
   completedAt: Date | null;
   createdAt  : Date;
   updatedAt  : Date;
@@ -154,6 +160,12 @@ const emdrSessionSchema = new Schema<IEmdrSession>(
     addictionContext: { type: addictionContextSchema, default: null },
 
     // ── Metadata ─────────────────────────────────────────────────────────────
+    roadmapSummaryText: { type: String, trim: true, maxlength: 5000, default: null },
+    roadmapSummaryAudioUrl: { type: String, trim: true, default: null },
+    roadmapSummaryAudioGeneratedAt: { type: Date, default: null },
+    processingState: { type: Schema.Types.Mixed, default: null },
+    processingResult: { type: Schema.Types.Mixed, default: null },
+    processingCompletedAt: { type: Date, default: null },
     completedAt: { type: Date, default: null },
   },
   {

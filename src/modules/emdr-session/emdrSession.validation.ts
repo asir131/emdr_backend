@@ -156,9 +156,31 @@ export const completeSessionSchema = z.object({
   params: idParam,
 });
 
+export const saveProcessingStateSchema = z.object({
+  params: idParam,
+  body: z.object({
+    processingState: z
+      .record(z.string(), z.unknown(), {
+        required_error: 'processingState is required',
+        invalid_type_error: 'processingState must be an object',
+      })
+      .nullable(),
+  }),
+});
+
 // ─────────────────────────────────────────────────────────────────────────────
 // 8. ID PARAM — used for GET /:id and DELETE /:id
 // ─────────────────────────────────────────────────────────────────────────────
+
+export const saveProcessingResultSchema = z.object({
+  params: idParam,
+  body: z.object({
+    processingResult: z.record(z.string(), z.unknown(), {
+      required_error: 'processingResult is required',
+      invalid_type_error: 'processingResult must be an object',
+    }),
+  }),
+});
 
 export const idParamSchema = z.object({
   params: idParam,

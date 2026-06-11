@@ -16,7 +16,7 @@ export const adminController = {
     } catch (e) { next(e); }
   },
 
-  getDashboardStats: async (req: AuthRequest, res: Response, next: NextFunction) => {
+  getDashboardStats: async (_req: AuthRequest, res: Response, next: NextFunction) => {
     try {
       respond(res, await adminService.getDashboardStats());
     } catch (e) { next(e); }

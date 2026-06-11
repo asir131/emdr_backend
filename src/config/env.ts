@@ -34,6 +34,10 @@ const envSchema = z.object({
   CLOUDINARY_CLOUD_NAME: z.string().optional(),
   CLOUDINARY_API_KEY: z.string().optional(),
   CLOUDINARY_API_SECRET: z.string().optional(),
+
+  OPENAI_API_KEY: z.string().optional(),
+  OPENAI_TTS_MODEL: z.string().default('gpt-4o-mini-tts'),
+  OPENAI_TTS_VOICE: z.string().default('alloy'),
 });
 
 const parsed = envSchema.safeParse(process.env);

@@ -97,7 +97,7 @@ export const progressService = {
   },
 
   // ── Journey progress for a user ───────────────────────────────────────────
-  async getJourneyProgress(userId: string, journeyId: string) {
+  async getJourneyProgress(_userId: string, journeyId: string) {
     const journey = await Journey.findById(journeyId).lean();
     if (!journey) throw ApiError.notFound('Journey not found');
 

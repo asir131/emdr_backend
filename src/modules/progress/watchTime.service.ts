@@ -1,6 +1,5 @@
 import mongoose from 'mongoose';
 import { WatchTime } from './watchTime.model';
-import { logger } from '../../config/logger';
 
 export const watchTimeService = {
   /**

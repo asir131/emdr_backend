@@ -170,7 +170,7 @@ export const cbtFormulationService = {
     }
 
     // Apply section update
-    (formulation as Record<string, unknown>)[section] = value;
+    (formulation as unknown as Record<string, unknown>)[section] = value;
 
     // Re-evaluate status after partial update
     formulation.status = resolveStatus(formulation);

@@ -9,7 +9,6 @@ import { verifyGoogleToken } from '../../utils/verifyGoogleToken';
 import { env } from '../../config/env';
 import { UserSubscription, SubscriptionStatus } from '../subscriptions/subscription.model';
 import { SessionProgress } from '../progress/sessionProgress.model';
-import { logger } from '../../config/logger';
 
 interface SignupData {
   firstName: string;

@@ -3,7 +3,7 @@ import multer from 'multer';
 import { calmPlaceController as ctrl } from './calmPlace.controller';
 import { authenticate } from '../../middleware/authMiddleware';
 import { validate } from '../../middleware/validate';
-import { saveCalmPlaceSchema, idParamSchema } from './calmPlace.validation';
+import { idParamSchema } from './calmPlace.validation';
 
 const router = Router();
 const upload = multer({ 

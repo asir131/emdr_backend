@@ -6,8 +6,6 @@ import {
   createCategorySchema,
   updateCategorySchema,
   categoryIdParamSchema,
-  createItemSchema,
-  updateItemSchema,
   itemIdParamSchema,
   listItemsSchema,
 } from './myTests.validation';

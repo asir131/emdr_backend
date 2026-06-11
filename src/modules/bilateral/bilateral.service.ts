@@ -2,6 +2,7 @@ import { BilateralItem, UserBilateralSettings, DirectionType, SpeedType } from '
 import { ApiError } from '../../utils/ApiError';
 import { cloudinary } from '../../config/cloudinary';
 import { logger } from '../../config/logger';
+import { Media } from '../category/media.model';
 
 // ── Cloudinary upload ─────────────────────────────────────────────────────
 const uploadFile = (
@@ -31,6 +32,49 @@ const getResourceType = (mimetype: string): 'image' | 'video' | 'raw' => {
   if (mimetype.startsWith('image/')) return 'image';
   if (mimetype.startsWith('video/') || mimetype.startsWith('audio/')) return 'video';
   return 'raw';
+};
+
+const normalizeAudioName = (value = '') => value.toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
+
+const instructionAudioAliases: Record<string, string[]> = {
+  intro: ['intro', 'introduction', 'bls intro', 'session intro', 'phase 1 intro'],
+  changing: ['changing', 'change', 'go with that'],
+  notChanging: [
+    'not changing',
+    'not change',
+    'return original image',
+    'return to original image',
+    'original image',
+  ],
+  stuck: ['stuck', 'stuck audio', 'stuck instruction'],
+  negativeBranch: ['negative branch', 'negative response', 'ok good keep going', 'keep going'],
+  endSession: ['end session', 'session end', 'closing', 'close safely', 'safe end'],
+  calmPlace: ['calm place', 'safe place', 'pincode', 'calm place audio'],
+};
+
+const resolveInstructionAudio = async () => {
+  const mediaItems = await Media.find({ mediaType: 'audio', status: 'active' })
+    .populate('categoryId', 'categoryName slug')
+    .sort({ createdAt: -1 })
+    .lean();
+
+  const audioMap: Record<string, string> = {};
+
+  for (const [key, aliases] of Object.entries(instructionAudioAliases)) {
+    const match = mediaItems.find((item: any) => {
+      const name = normalizeAudioName(item?.name || item?.originalName || '');
+      const categoryName = normalizeAudioName(item?.categoryId?.categoryName || item?.categoryId?.slug || '');
+      const searchable = `${name} ${categoryName}`;
+
+      return aliases.some((alias) => searchable.includes(normalizeAudioName(alias)));
+    });
+
+    if (match?.url) {
+      audioMap[key] = match.url;
+    }
+  }
+
+  return audioMap;
 };
 
 // ── Item CRUD ─────────────────────────────────────────────────────────────
@@ -120,14 +164,15 @@ export const bilateralService = {
 export const settingsService = {
 
   async getFullConfig(userId: string) {
-    const [environments, objects, sounds, userSettings] = await Promise.all([
+    const [environments, objects, sounds, userSettings, instructionAudio] = await Promise.all([
       BilateralItem.find({ type: 'environment', isActive: true }).sort({ sortOrder: 1 }).lean(),
       BilateralItem.find({ type: 'object',      isActive: true }).sort({ sortOrder: 1 }).lean(),
       BilateralItem.find({ type: 'sound',        isActive: true }).sort({ sortOrder: 1 }).lean(),
       UserBilateralSettings.findOne({ userId }).lean(),
+      resolveInstructionAudio(),
     ]);
 
-    return { environments, objects, sounds, userSettings: userSettings ?? null };
+    return { environments, objects, sounds, instructionAudio, userSettings: userSettings ?? null };
   },
 
   async save(userId: string, data: {

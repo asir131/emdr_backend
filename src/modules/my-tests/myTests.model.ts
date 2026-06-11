@@ -30,7 +30,7 @@ export const DAYS_OF_WEEK: DayOfWeek[] = [
 export interface ITestCategory extends Document {
   userId      : Types.ObjectId;
   categoryName: string;
-  description?: string;
+  description?: string | null;
   isActive    : boolean;
   itemCount   : number;
   createdAt   : Date;
