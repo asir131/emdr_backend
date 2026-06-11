@@ -63,7 +63,7 @@ export const assessmentService = {
     }
 
     // Get user email
-    const User = (await import('../auth/auth.model')).User;
+    const User = (await import('../auth/auth.model.js')).User;
     const user = await User.findById(userId).select('email');
     if (!user) throw ApiError.notFound('User not found');
 
@@ -133,7 +133,7 @@ export const assessmentService = {
     const des11Score = Math.round(avg(des11Answers) * 10) / 10;
 
     // Get user email
-    const User = (await import('../auth/auth.model')).User;
+    const User = (await import('../auth/auth.model.js')).User;
     const user = await User.findById(userId).select('email');
     if (!user) throw ApiError.notFound('User not found');
 

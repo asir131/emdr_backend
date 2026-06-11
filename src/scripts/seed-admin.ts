@@ -30,7 +30,7 @@ async function seedAdmin() {
   console.log('✅ Database connected');
 
   // Lazy import after DB connect to avoid model registration issues
-  const { User } = await import('../modules/auth/auth.model');
+  const { User } = await import('../modules/auth/auth.model.js');
 
   // Check if admin already exists
   const existing = await User.findOne({ email: ADMIN_EMAIL });

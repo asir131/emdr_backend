@@ -41,8 +41,8 @@ export const startNotificationWorker = () => {
     async (job: Job<BroadcastJobData>) => {
       const { tokens, userIds, title, body, data, imageUrl } = job.data;
 
-      const { sendToMultiple } = await import('../utils/sendNotification');
-      const { Notification } = await import('../modules/notification/notification.model');
+      const { sendToMultiple } = await import('../utils/sendNotification.js');
+      const { Notification } = await import('../modules/notification/notification.model.js');
 
       const BATCH = 500;
       let totalSent = 0;
