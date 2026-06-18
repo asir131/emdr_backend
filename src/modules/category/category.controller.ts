@@ -5,6 +5,17 @@ import { AuthRequest } from '../../middleware/authMiddleware';
 const ok = (res: Response, data: unknown, status = 200) =>
   res.status(status).json({ success: true, data, meta: { timestamp: new Date().toISOString() } });
 
+const parseJsonField = (value: unknown) => {
+  if (typeof value !== 'string') return value;
+  if (!value.trim()) return undefined;
+
+  try {
+    return JSON.parse(value);
+  } catch {
+    return value;
+  }
+};
+
 export const categoryController = {
   create: async (req: AuthRequest, res: Response, next: NextFunction) => {
     try { ok(res, await categoryService.create(req.user!.userId, req.body.categoryName), 201); }
@@ -39,7 +50,8 @@ export const mediaController = {
       const mainFile = files?.['image']?.[0] ?? (req.file as Express.Multer.File | undefined);
       if (!mainFile) throw new Error('No file uploaded');
 
-      const { categoryId, name, status = 'active', defaultFacing, bilateralAudioProfile } = req.body;
+      const { categoryId, name, status = 'active', defaultFacing } = req.body;
+      const bilateralAudioProfile = parseJsonField(req.body.bilateralAudioProfile);
 
       const profileFiles = {
         imageProfile: files?.['imageProfile']?.[0],

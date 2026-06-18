@@ -4,58 +4,78 @@ import { uploadGeneralMedia } from '../../utils/uploadImage';
 import { IEmdrSession } from './emdrSession.model';
 
 const compact = (value?: string | null) => (value || '').trim();
+const joinList = (values: string[]) => values.filter(Boolean).join(', ');
 
 export const buildRoadmapSummaryScript = (session: IEmdrSession): string => {
   const beliefPairs = session.beliefPairs || [];
-  const primaryPair = beliefPairs[0];
+  const negativeBeliefs = beliefPairs
+    .map((pair) => compact(pair.negativeBelief))
+    .filter(Boolean);
+  const emotions = [
+    compact(session.primaryEmotion),
+    compact(session.additionalEmotions),
+  ].filter(Boolean);
+  const bodyLocation = compact(session.bodyLocation);
+  const target = compact(session.freezeFrame) || compact(session.targetDescription);
+  const targetPrefix = session.sessionType === 'future'
+    ? 'You are imagining'
+    : session.sessionType === 'words'
+      ? 'You are bringing to mind'
+      : session.sessionType === 'negative'
+        ? 'You are focusing on'
+        : 'You are remembering';
+  const thoughtClause = negativeBeliefs.length
+    ? `the thoughts are ${joinList(negativeBeliefs)}`
+    : '';
+  const emotionClause = emotions.length
+    ? `you are feeling ${joinList(emotions)}`
+    : '';
+  const bodyClause = bodyLocation
+    ? `it sits in ${bodyLocation}`
+    : '';
+  const middleClauses = [thoughtClause, emotionClause, bodyClause].filter(Boolean);
   const positiveBeliefs = beliefPairs
     .map((pair) => compact(pair.positiveBelief))
     .filter(Boolean);
 
   if (session.sessionType === 'addiction' && session.addictionContext) {
     const context = session.addictionContext;
-    return [
-      'Your roadmap summary is ready.',
-      `The addiction aspect you are working with is ${compact(context.aspect)}.`,
-      `The positive feeling connected with it is ${compact(context.positiveFeeling)}.`,
-      `The current positive feeling scale rating is ${context.pfsRating} out of 10.`,
+    const addictionClauses = [
       compact(context.associatedThoughts)
-        ? `The associated thoughts are: ${compact(context.associatedThoughts)}.`
+        ? `the thoughts connected with it are ${compact(context.associatedThoughts)}`
         : '',
       compact(context.bodyLocation)
-        ? `You notice this in the body around ${compact(context.bodyLocation)}.`
+        ? `you notice it in ${compact(context.bodyLocation)}`
         : '',
       compact(context.visualization)
-        ? `The visualization is: ${compact(context.visualization)}.`
+        ? `the image or shape that comes to mind is ${compact(context.visualization)}`
         : '',
-      'When you are ready...',
+    ].filter(Boolean);
+
+    return [
+      compact(context.aspect)
+        ? `You are focusing on ${compact(context.aspect)}.`
+        : '',
+      compact(context.positiveFeeling)
+        ? `The positive feeling is ${compact(context.positiveFeeling)}.`
+        : '',
+      addictionClauses.length ? addictionClauses.join(', ') + '.' : '',
+      Number.isFinite(context.pfsRating)
+        ? `The positive feeling scale rating is ${context.pfsRating} out of 10.`
+        : '',
+      'Now, when you are ready and have this in mind, press start.',
     ].filter(Boolean).join(' ');
   }
 
   return [
-    'Your roadmap summary is ready.',
-    compact(session.targetDescription)
-      ? `The original memory or image you are working with is: ${compact(session.targetDescription)}.`
+    target
+      ? `${targetPrefix} ${target}.`
       : '',
-    compact(session.freezeFrame)
-      ? `The freeze frame is: ${compact(session.freezeFrame)}.`
-      : '',
-    compact(primaryPair?.negativeBelief)
-      ? `The negative belief is: ${compact(primaryPair.negativeBelief)}.`
-      : '',
+    middleClauses.length ? middleClauses.join(', and ') + '.' : '',
     positiveBeliefs.length
-      ? `The positive belief${positiveBeliefs.length > 1 ? 's are' : ' is'}: ${positiveBeliefs.join('. ')}.`
+      ? `The positive belief${positiveBeliefs.length > 1 ? 's are' : ' is'} ${joinList(positiveBeliefs)}.`
       : '',
-    compact(session.primaryEmotion)
-      ? `The emotion you identified is: ${compact(session.primaryEmotion)}.`
-      : '',
-    compact(session.bodyLocation)
-      ? `You notice this in the body around ${compact(session.bodyLocation)}.`
-      : '',
-    Number.isFinite(session.sudRating)
-      ? `The starting SUDS rating is ${session.sudRating} out of 10.`
-      : '',
-    'When you are ready...',
+    'Now, when you are ready and have this in mind, press start.',
   ].filter(Boolean).join(' ');
 };
 
