@@ -6,6 +6,7 @@ export interface ISessionProgress extends Document {
   totalSessions:      number;
   completedSessions:  number;
   progressPercentage: string; // e.g. "49%"
+  roadmapIntroVideoCompleted: boolean;
   createdAt:          Date;
   updatedAt:          Date;
 }
@@ -37,6 +38,10 @@ const sessionProgressSchema = new Schema<ISessionProgress>(
     progressPercentage: { 
       type: String, 
       required: true 
+    },
+    roadmapIntroVideoCompleted: {
+      type: Boolean,
+      default: false,
     },
   },
   { timestamps: true }

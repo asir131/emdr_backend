@@ -19,4 +19,14 @@ export const sessionProgressController = {
       respond(res, result);
     } catch (e) { next(e); }
   },
+
+  markRoadmapIntroCompleted: async (req: AuthRequest, res: Response, next: NextFunction) => {
+    try {
+      const result = await sessionProgressService.markRoadmapIntroCompleted(
+        req.user!.userId,
+        req.params.journeyId
+      );
+      respond(res, result);
+    } catch (e) { next(e); }
+  },
 };

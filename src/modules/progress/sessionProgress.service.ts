@@ -32,7 +32,8 @@ export const sessionProgressService = {
         details: {
           totalSessions:     progress?.totalSessions,
           completedSessions: progress?.completedSessions
-        }
+        },
+        roadmapIntroVideoCompleted: Boolean(progress?.roadmapIntroVideoCompleted),
       };
     } catch (error: any) {
       // Handle duplicate key error (old index issue)
@@ -69,7 +70,8 @@ export const sessionProgressService = {
             details: {
               totalSessions: newProgress.totalSessions,
               completedSessions: newProgress.completedSessions
-            }
+            },
+            roadmapIntroVideoCompleted: newProgress.roadmapIntroVideoCompleted,
           };
         }
 
@@ -80,7 +82,8 @@ export const sessionProgressService = {
           details: {
             totalSessions:     progress.totalSessions,
             completedSessions: progress.completedSessions
-          }
+          },
+          roadmapIntroVideoCompleted: Boolean(progress.roadmapIntroVideoCompleted),
         };
       }
       
@@ -98,7 +101,8 @@ export const sessionProgressService = {
     if (!progress) {
       return {
         totalCompledSession: "0%",
-        details: { totalSessions: 0, completedSessions: 0 }
+        details: { totalSessions: 0, completedSessions: 0 },
+        roadmapIntroVideoCompleted: false,
       };
     }
     
@@ -107,7 +111,34 @@ export const sessionProgressService = {
       details: {
         totalSessions:     progress.totalSessions,
         completedSessions: progress.completedSessions
-      }
+      },
+      roadmapIntroVideoCompleted: Boolean(progress.roadmapIntroVideoCompleted),
+    };
+  },
+
+  async markRoadmapIntroCompleted(userId: string, journeyId: string) {
+    const progress = await SessionProgress.findOneAndUpdate(
+      { userId, journeyId },
+      {
+        $set: { roadmapIntroVideoCompleted: true },
+        $setOnInsert: {
+          totalSessions: 10,
+          completedSessions: 0,
+          progressPercentage: '0%',
+        },
+      },
+      { upsert: true, new: true, runValidators: true, setDefaultsOnInsert: true }
+    ).lean();
+
+    logger.info('Roadmap intro video marked completed', { userId, journeyId });
+
+    return {
+      totalCompledSession: progress?.progressPercentage || '0%',
+      details: {
+        totalSessions: progress?.totalSessions || 10,
+        completedSessions: progress?.completedSessions || 0,
+      },
+      roadmapIntroVideoCompleted: true,
     };
   },
 };

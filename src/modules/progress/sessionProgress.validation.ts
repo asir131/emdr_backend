@@ -22,3 +22,9 @@ export const getSessionProgressSchema = z.object({
   }),
 });
 
+export const markRoadmapIntroCompletedSchema = z.object({
+  params: z.object({
+    journeyId: objectIdSchema,
+  }),
+});
+
