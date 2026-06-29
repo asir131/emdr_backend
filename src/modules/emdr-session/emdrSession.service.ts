@@ -51,14 +51,22 @@ async function markReadyForBls(session: IEmdrSession): Promise<IEmdrSession> {
 }
 
 async function ensureRoadmapSummaryAudio(session: IEmdrSession): Promise<IEmdrSession> {
-  if (session.roadmapSummaryAudioUrl && session.roadmapSummaryText) return session;
+  if (
+    session.roadmapSummaryAudioProvider === 'elevenlabs' &&
+    session.roadmapSummaryAudioUrl &&
+    session.roadmapSummaryText
+  ) return session;
 
   const generated = await generateRoadmapSummaryAudio(session);
   session.roadmapSummaryText = generated.text;
 
   if (generated.audioUrl) {
     session.roadmapSummaryAudioUrl = generated.audioUrl;
+    session.roadmapSummaryAudioProvider = 'elevenlabs';
     session.roadmapSummaryAudioGeneratedAt = new Date();
+  } else {
+    session.roadmapSummaryAudioUrl = null;
+    session.roadmapSummaryAudioProvider = null;
   }
 
   return session.save();

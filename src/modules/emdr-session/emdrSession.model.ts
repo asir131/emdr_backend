@@ -95,6 +95,7 @@ export interface IEmdrSession extends Document {
   // ── Metadata ──────────────────────────────────────────────────────────────
   roadmapSummaryText: string | null;
   roadmapSummaryAudioUrl: string | null;
+  roadmapSummaryAudioProvider: 'elevenlabs' | null;
   roadmapSummaryAudioGeneratedAt: Date | null;
   processingState: Record<string, unknown> | null;
   processingResult: Record<string, unknown> | null;
@@ -162,6 +163,11 @@ const emdrSessionSchema = new Schema<IEmdrSession>(
     // ── Metadata ─────────────────────────────────────────────────────────────
     roadmapSummaryText: { type: String, trim: true, maxlength: 5000, default: null },
     roadmapSummaryAudioUrl: { type: String, trim: true, default: null },
+    roadmapSummaryAudioProvider: {
+      type: String,
+      enum: ['elevenlabs'],
+      default: null,
+    },
     roadmapSummaryAudioGeneratedAt: { type: Date, default: null },
     processingState: { type: Schema.Types.Mixed, default: null },
     processingResult: { type: Schema.Types.Mixed, default: null },

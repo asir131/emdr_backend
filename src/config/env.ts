@@ -35,9 +35,10 @@ const envSchema = z.object({
   CLOUDINARY_API_KEY: z.string().optional(),
   CLOUDINARY_API_SECRET: z.string().optional(),
 
-  OPENAI_API_KEY: z.string().optional(),
-  OPENAI_TTS_MODEL: z.string().default('gpt-4o-mini-tts'),
-  OPENAI_TTS_VOICE: z.string().default('alloy'),
+  ELEVENLABS_API_KEY: z.string().optional(),
+  ELEVENLABS_VOICE_ID: z.string().default('JBFqnCBsd6RMkjVDRZzb'),
+  ELEVENLABS_MODEL_ID: z.string().default('eleven_multilingual_v2'),
+  ELEVENLABS_OUTPUT_FORMAT: z.string().default('mp3_44100_128'),
 });
 
 const parsed = envSchema.safeParse(process.env);

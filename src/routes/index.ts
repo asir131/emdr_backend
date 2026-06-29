@@ -29,6 +29,7 @@ import emdrSessionRoutes from '../modules/emdr-session/emdrSession.routes';
 import questionnaireRoutes from '../modules/questionnaire/questionnaire.routes';
 import myTestsRoutes from '../modules/my-tests/myTests.routes';
 import symptomTrackerRoutes from '../modules/symptom-tracker/symptomTracker.routes';
+import voiceRoutes from '../modules/voice/voice.routes';
 
 const router = Router();
 
@@ -61,5 +62,6 @@ router.use('/emdr-session', emdrSessionRoutes);
 router.use('/my-tests', myTestsRoutes);
 router.use('/questionnaire', questionnaireRoutes);
 router.use('/symptom-tracker', symptomTrackerRoutes);
+router.use('/voice', voiceRoutes);
 
 export default router;
